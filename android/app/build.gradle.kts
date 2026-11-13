@@ -71,6 +71,12 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // Chaquopy 要求显式声明 ndk abiFilters，否则配置阶段直接失败
+        //（"Chaquopy requires ndk.abiFilters"）。与 Flutter split-per-abi
+        // 产出的三个架构一致。
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
+        }
     }
 
     // 签名 keystore：文件与密码均不入库（keystore 被 gitignore，密码在 key.properties）。
