@@ -1,0 +1,221 @@
+# ⚠️ 本文件是「鸿蒙专用依赖覆盖模板」，不是生效中的覆盖文件。
+# 使用方式：
+#   · 鸿蒙本地构建：复制为 pubspec_overrides.yaml（该名称已被 .gitignore 忽略）
+#   · 鸿蒙 CI：build_ohos.yml 在 pub get 前自动复制本模板，并补入两条 ohos 专属依赖
+#     （media_kit_libs_ohos / flutter_secure_storage_ohos）。
+#   · 官方 Flutter SDK 构建（Android / Windows / Linux / macOS / iOS）**不启用**本文件，
+#     仓库主 pubspec.yaml 只保留官方依赖集，避免 CI 被 gitcode 适配源阻塞。
+#
+# 鸿蒙（OHOS）依赖换源 —— 仅 feature/ohos 分支生效。
+# 主 pubspec.yaml 的版本约束保持不动，这里集中放鸿蒙化适配源（git + path + ref）。
+# 适配仓库：gitcode CPF-Flutter 组织（ohos Flutter 生态迁移目的地）。
+# 分支命名规律：br_<包名>-v<版本>_ohos（版本与本项目约束对齐后选取）。
+#
+# 形态说明：
+#   A. ohos 平台实现内嵌在插件包内（packages/<pkg>/<pkg>/ohos/）→ 覆盖主包即可；
+#   B. 联邦插件（主包 + 独立 <pkg>_ohos 包）→ 主包与 _ohos 双覆盖，
+#      且分支内的嵌套 git 地址可能是旧 org（openharmony-tpc / openharmony-sig），
+#      在这里统一改到 CPF-Flutter，避免依赖旧地址。
+dependency_overrides:
+  # ---------- plus_plugins（形态 A）----------
+  # 网络状态检测（WiFi 下载模式判断）。6.1.0 与项目约束 ^6.1.0 完全一致。
+  connectivity_plus:
+    git:
+      url: https://gitcode.com/CPF-Flutter/flutter_plus_plugins.git
+      path: packages/connectivity_plus/connectivity_plus
+      ref: br_connectivity_plus-v6.1.0_ohos
+  # 系统分享（详情页分享）。10.1.1 满足 ^10.1.0。
+  share_plus:
+    git:
+      url: https://gitcode.com/CPF-Flutter/flutter_plus_plugins.git
+      path: packages/share_plus/share_plus
+      ref: br_share_plus-v10.1.1_ohos
+  # 包信息（关于页版本号）。8.1.0 满足 ^8.0.0。
+  package_info_plus:
+    git:
+      url: https://gitcode.com/CPF-Flutter/flutter_plus_plugins.git
+      path: packages/package_info_plus/package_info_plus
+      ref: br_package_info_plus-v8.1.0_ohos
+  # 电池电量（阅读器页脚）。6.1.0 满足 ^6.0.0。
+  battery_plus:
+    git:
+      url: https://gitcode.com/CPF-Flutter/flutter_plus_plugins.git
+      path: packages/battery_plus/battery_plus
+      ref: br_battery_plus-v6.1.0_ohos
+
+  # ---------- flutter_packages（形态 B）----------
+  # 目录（下载路径）。2.1.5 满足 ^2.1.3；ohos 版 share_plus 的平台接口包把
+  # path_provider 硬编为 git 源，故必须同批换源，否则版本求解冲突。
+  path_provider:
+    git:
+      url: https://gitcode.com/CPF-Flutter/flutter_packages.git
+      path: packages/path_provider/path_provider
+      ref: br_path_provider-v2.1.5_ohos
+  path_provider_ohos:
+    git:
+      url: https://gitcode.com/CPF-Flutter/flutter_packages.git
+      path: packages/path_provider/path_provider_ohos
+      ref: br_path_provider-v2.1.5_ohos
+  # 阅读偏好 / 进度持久化。2.5.4 满足 ^2.2.2。
+  shared_preferences:
+    git:
+      url: https://gitcode.com/CPF-Flutter/flutter_packages.git
+      path: packages/shared_preferences/shared_preferences
+      ref: br_shared_preferences-v2.5.4_ohos
+  shared_preferences_ohos:
+    git:
+      url: https://gitcode.com/CPF-Flutter/flutter_packages.git
+      path: packages/shared_preferences/shared_preferences_ohos
+      ref: br_shared_preferences-v2.5.4_ohos
+  # 系统浏览器打开链接。6.3.2 满足 ^6.3.0。
+  url_launcher:
+    git:
+      url: https://gitcode.com/CPF-Flutter/flutter_packages.git
+      path: packages/url_launcher/url_launcher
+      ref: br_url_launcher-v6.3.2_ohos
+  url_launcher_ohos:
+    git:
+      url: https://gitcode.com/CPF-Flutter/flutter_packages.git
+      path: packages/url_launcher/url_launcher_ohos
+      ref: br_url_launcher-v6.3.2_ohos
+
+  # ---------- 独立仓库 ----------
+  # 运行时权限（本地导入前申请）。11.3.1 与项目约束完全一致；联邦双覆盖。
+  permission_handler:
+    git:
+      url: https://gitcode.com/CPF-Flutter/flutter_permission_handler.git
+      path: permission_handler
+      ref: br_permission_handler_v11.3.1_ohos
+  permission_handler_ohos:
+    git:
+      url: https://gitcode.com/CPF-Flutter/flutter_permission_handler.git
+      path: permission_handler_ohos
+      ref: br_permission_handler_v11.3.1_ohos
+  # 敏感凭据存储（WebDAV 密码）。9.2.4 满足 ^9.0.0。
+  # 注：上游 ohos 分支的原生包可用，但主包 Dart 层 _selectOptions 缺 ohos 分支会抛
+  # unsupported_platform；本地补丁包（third_party/patched/flutter_secure_storage，
+  # OHOS_PATCH.md 有说明）已补该分支。原生实现仍走 git 的 flutter_secure_storage_ohos。
+  flutter_secure_storage:
+    path: third_party/patched/flutter_secure_storage
+  flutter_secure_storage_ohos:
+    git:
+      url: https://gitcode.com/CPF-Flutter/fluttertpc_flutter_secure_storage.git
+      path: flutter_secure_storage_ohos
+      ref: br_v9.2.4_ohos
+  # 屏幕常亮（漫画阅读器）。1.3.2 满足 ^1.2.0，内嵌 ohos 平台（1.2.8 分支缺声明，不用）。
+  wakelock_plus:
+    git:
+      url: https://gitcode.com/CPF-Flutter/fluttertpc_wakelock_plus.git
+      path: wakelock_plus
+      ref: br_v1.3.2_ohos
+  # 音频会话（来电/拔耳机中断）。0.2.2 与项目约束完全一致，单包仓库。
+  audio_session:
+    git:
+      url: https://gitcode.com/CPF-Flutter/flutter_audio_session.git
+      path: "."
+      ref: br_v0.2.2_ohos
+  # 本地文件选择（导入源 JSON / 本地漫画）。8.0.7 满足 ^8.0.0，单包仓库。
+  # 注：上游分支原生 dir 方法返回 List，Dart 层按 String 强转会崩溃；本地补丁包
+  # （third_party/patched/file_picker，OHOS_PATCH.md 有说明）已做类型兼容。
+  file_picker:
+    path: third_party/patched/file_picker
+  # SQLite（cached_network_image / 缓存管理器的传递依赖）。2.4.2 与现解析版本一致。
+  sqflite:
+    git:
+      url: https://gitcode.com/CPF-Flutter/flutter_sqflite.git
+      path: sqflite
+      ref: br_v2.4.2_ohos
+  sqflite_ohos:
+    git:
+      url: https://gitcode.com/CPF-Flutter/flutter_sqflite.git
+      path: sqflite_ohos
+      ref: br_v2.4.2_ohos
+  # WebView（验证流程 / 嗅探）。6.1.5 满足 ^6.0.0。
+  flutter_inappwebview:
+    git:
+      url: https://gitcode.com/CPF-Flutter/flutter_inappwebview.git
+      path: flutter_inappwebview
+      ref: br_v6.1.5_ohos
+  flutter_inappwebview_ohos:
+    git:
+      url: https://gitcode.com/CPF-Flutter/flutter_inappwebview.git
+      path: flutter_inappwebview_ohos
+      ref: br_v6.1.5_ohos
+  # PDF 漫画解析。2.9.2 与项目钉死版本完全一致（上游 2.10+ 与 vector_math 不兼容）。
+  pdfx:
+    git:
+      url: https://gitcode.com/CPF-Flutter/flutter_pdfx.git
+      path: packages/pdfx
+      ref: br_pdfx-v2.9.2_ohos
+  # 系统通知（RSS 更新提醒）。17.2.4 满足 ^17.2.0，内嵌 ohos 平台。
+  flutter_local_notifications:
+    git:
+      url: https://gitcode.com/CPF-Flutter/fluttertpc_flutter_local_notifications.git
+      path: flutter_local_notifications
+      ref: br_flutter_local_notifications-v17.2.4_ohos
+  # 传递依赖统一：ohos 版 file_picker 8.0.7 仍带旧 web ^0.5.1，与 pdfx 的 web ^1.1.1 冲突。
+  # 强制统一到 1.x（web 平台实现只在 web target 编译，鸿蒙/安卓构建不受影响）。
+  web: ^1.1.1
+  # 传递依赖统一：ohos 版 pdfx 把 device_info_plus 改成了 git 源（无 ref，解析到分支头），
+  # 与 super_clipboard → super_native_extensions 的 hosted 依赖源冲突。
+  # 取最接近原解析版本（11.5.0）的 ohos 分支 11.4.0 统一。
+  device_info_plus:
+    git:
+      url: https://gitcode.com/CPF-Flutter/flutter_plus_plugins.git
+      path: packages/device_info_plus/device_info_plus
+      ref: br_device_info_plus_v11.4.0_ohos
+  # ---------- C 类核实后的升级项（官方包已内置 ohos 平台）----------
+  # 音量控制：2.0.2 起官方 pub 版内置 ohos 平台（2.0.1 无），pin 到 ^2.0.2 直接可用。
+  flutter_volume_controller: ^2.0.2
+  # 屏幕亮度：2.1.11 起官方 pub 版内置 ohos 平台（0.2.x 无）。
+  # 注意：2.x 为破坏性 API 改名（setScreenBrightness → setApplicationScreenBrightness
+  # 等），调用点已同步迁移（阅读器/播放器手势共 4 文件）。
+  screen_brightness: ^2.1.11
+  # ---------- 鸿蒙播放内核（阶段 4）----------
+  # media_kit 上游无 ohos 平台，改用社区 fork 的 feat-ohos-hdr 分支：
+  # - media_kit 1.2.3 / media_kit_video 2.0.1（pubspec 已声明 ohos 插件）
+  # - libs/ohos/media_kit_libs_ohos 1.0.0：CMake 按 URL+SHA256 下载预编译
+  #   libmpv.so（arm64）解压到 ohos/libs/arm64-v8a；目录非空则跳过下载。
+  # 注意：override 对本分支的所有平台生效（含 Android），分支内构建 Android
+  # 时同样走 1.2.3；发布构建请从主分支出。
+  media_kit:
+    git:
+      url: https://github.com/p1nbored/media-kit.git
+      path: media_kit
+      ref: feat-ohos-hdr
+  media_kit_video:
+    git:
+      url: https://github.com/p1nbored/media-kit.git
+      path: media_kit_video
+      ref: feat-ohos-hdr
+  media_kit_libs_ohos:
+    git:
+      url: https://github.com/p1nbored/media-kit.git
+      path: libs/ohos/media_kit_libs_ohos
+      ref: feat-ohos-hdr
+  # media_kit_video 的 ohos 分支依赖 wakelock_plus_ohos ^0.0.3，而 pub 上该版本
+  # 的 SDK 约束是 <3.0.0（与本项目 Dart 3.13 冲突）→ 本地放宽约束的补丁副本。
+  wakelock_plus_ohos:
+    path: third_party/patched/wakelock_plus_ohos
+
+  # ---------- 画中画（阶段 5 恢复）----------
+  # 上游 floating 6.0.0 仅 Android。社区 fork 在该 commit 起支持 Android +
+  # HarmonyOS（原生 FloatingPlugin 自动检测可用性，鸿蒙走系统 PiP 窗口）。
+  # API 改名：ImmediatePiP → EnableManual、OnLeavePiP → AutoEnable，
+  # 调用点已同步迁移；鸿蒙另有 onPipModeChanged / onPipAction 回调与
+  # updatePipControlStatus 图标同步（video_player_cast_pip 接线）。
+  # fork 声明版本仍为 3.0.0，依赖 override 不受主约束 ^6.0.0 限制。
+  floating:
+    git:
+      url: https://github.com/qinshah/floating.git
+      ref: 3eefccb759c4ea8114e722f1511fe1dbce70dc9f
+
+  # ---------- 本地打补丁的纯 Dart UI 库 ----------
+  # 鸿蒙 Flutter fork 的 TargetPlatform 枚举新增 ohos 值，上游 material_ui /
+  # cupertino_ui 内的穷尽 switch 缺该分支 → 鸿蒙目标编译报「not exhaustively
+  # matched」。third_party/patched 下的副本由 tool/patch_target_platform_ohos.js
+  # 机械插入 `case TargetPlatform.ohos:`（空 case 落 Android，移动端语义）。
+  material_ui:
+    path: third_party/patched/material_ui
+  cupertino_ui:
+    path: third_party/patched/cupertino_ui

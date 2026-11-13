@@ -1,0 +1,504 @@
+library;
+
+import 'package:material_ui/material_ui.dart';
+import 'package:wxyy/generated/app_localizations.dart';
+
+import '../../../core/models/plugin_config.dart';
+import '../../../core/navigation/app_page_route.dart';
+import '../../../core/scraper/http_fetcher.dart';
+import '../../../core/scraper/publish_page_mirror_extractor.dart';
+import '../../../core/resolver/script_resolver.dart';
+import '../../../core/services/config_loader.dart';
+import '../../../core/theme/app_tokens.dart';
+import '../../../core/widgets/app_alert_dialog.dart';
+import '../../../core/widgets/app_empty_state.dart';
+import '../../../core/widgets/app_form_field.dart';
+import '../../../core/widgets/app_icon_button.dart';
+import '../../../core/widgets/app_list_tile.dart';
+import '../../../core/widgets/app_glass_bar.dart';
+
+/// 镜像管理页：列出源的可用镜像，支持测速与切换。
+///
+/// 合并展示两类镜像：
+/// - 声明镜像（[SiteConfig.mirrors]，不可删除）
+/// - 自定义镜像（[ConfigLoader.getCustomMirrors]，可删除，带「自定义」标记）
+///
+/// 支持手动添加自定义镜像、以及从发布页（[SiteConfig.publishPageUrl]）提取镜像。
+class SourceMirrorScreen extends StatefulWidget {
+  final PluginConfig source;
+  const SourceMirrorScreen({super.key, required this.source});
+
+  @override
+  State<SourceMirrorScreen> createState() => _SourceMirrorScreenState();
+}
+
+class _SourceMirrorScreenState extends State<SourceMirrorScreen> {
+  late String _activeBaseUrl;
+  final Map<String, int> _speeds = <String, int>{};
+  final Set<String> _testing = <String>{};
+  final Set<String> _failed = <String>{};
+  bool _extracting = false;
+  bool _testingAll = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _activeBaseUrl = ConfigLoader.instance.getActiveMirror(widget.source);
+    final hasPublishPage =
+        widget.source.site.publishPageUrl?.trim().isNotEmpty ?? false;
+    final hasCustom =
+        ConfigLoader.instance.getCustomMirrors(widget.source.id).isNotEmpty;
+    // 发布页提取改为自动：进入镜像页即自动抓取发布页镜像并设为可用镜像，
+    // 无需手动点击。仅当该源有发布页且尚未提取过镜像时自动执行一次。
+    if (hasPublishPage && !hasCustom) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _autoExtractFromPublish();
+      });
+    }
+    // 源自带 mirrors 路由：进入即自动获取镜像并设为可用，无需手动。
+    // 该路由为纯 JS（不经网络预取），主域失效也能返回内置备用域名，
+    // 因此「域名挂了也能给出可切换镜像」。仅当尚未添加过自定义镜像时执行一次。
+    if (!hasCustom && widget.source.routes.containsKey('mirrors')) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _autoFetchFromRoute();
+      });
+    }
+  }
+
+  Future<void> _testSpeed(String baseUrl) async {
+    if (_testing.contains(baseUrl)) return;
+    setState(() {
+      _testing.add(baseUrl);
+      _failed.remove(baseUrl);
+    });
+    final stopwatch = Stopwatch()..start();
+    try {
+      final reachable = await HttpFetcher.instance.isReachable(baseUrl);
+      if (mounted) {
+        if (reachable) {
+          _speeds[baseUrl] = stopwatch.elapsedMilliseconds;
+        } else {
+          _failed.add(baseUrl);
+        }
+      }
+    } catch (_) {
+      if (mounted) setState(() => _failed.add(baseUrl));
+    } finally {
+      stopwatch.stop();
+      if (mounted) setState(() => _testing.remove(baseUrl));
+    }
+  }
+
+  /// 一键测速全部镜像（item 8）：并发测速所有声明/自定义镜像，
+  /// 每条结果回显在各自 tile 上。
+  Future<void> _testAll() async {
+    if (_testingAll) return;
+    setState(() => _testingAll = true);
+    final all = <String>[
+      ...widget.source.site.mirrors.map((m) => m.baseUrl),
+      ...ConfigLoader.instance
+          .getCustomMirrors(widget.source.id)
+          .map((m) => m.baseUrl),
+    ];
+    try {
+      await Future.wait(all.map((u) => _testSpeed(u)));
+    } finally {
+      if (mounted) setState(() => _testingAll = false);
+    }
+  }
+
+  void _select(String baseUrl) {
+    ConfigLoader.instance.setActiveMirror(widget.source.id, baseUrl);
+    setState(() => _activeBaseUrl = baseUrl);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(AppLocalizations.of(context).mirrorSwitched)),
+    );
+  }
+
+  Future<void> _showAddCustomMirrorDialog() async {
+    final l10n = AppLocalizations.of(context);
+    final nameCtl = TextEditingController();
+    final domainCtl = TextEditingController();
+    final baseUrlCtl = TextEditingController();
+
+    final added = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AppAlertDialog(
+        title: Text(l10n.mirrorAddCustom),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              AppFormField(
+                label: l10n.mirrorName,
+                controller: nameCtl,
+                hint: 'mirror1.example.com',
+              ),
+              const SizedBox(height: AppTokens.spaceMd),
+              AppFormField(
+                label: l10n.mirrorDomain,
+                controller: domainCtl,
+                hint: 'mirror1.example.com',
+              ),
+              const SizedBox(height: AppTokens.spaceMd),
+              AppFormField(
+                label: l10n.mirrorBaseUrl,
+                controller: baseUrlCtl,
+                hint: 'https://mirror1.example.com',
+                keyboardType: TextInputType.url,
+              ),
+            ],
+          ),
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(l10n.confirm),
+          ),
+        ],
+      ),
+    );
+
+    nameCtl.dispose();
+    domainCtl.dispose();
+    final baseUrlValue = baseUrlCtl.text.trim();
+    baseUrlCtl.dispose();
+
+    if (added != true) return;
+    if (!mounted) return;
+
+    if (!baseUrlValue.startsWith('http://') &&
+        !baseUrlValue.startsWith('https://')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.mirrorAddInvalid)),
+      );
+      return;
+    }
+
+    // 域名/名称缺省时从 baseUrl 自动推导，避免强制用户填全三栏。
+    final uri = Uri.tryParse(baseUrlValue);
+    final host = uri?.host ?? '';
+    final domain = domainCtl.text.trim().isEmpty ? host : domainCtl.text.trim();
+    final name = nameCtl.text.trim().isEmpty ? host : nameCtl.text.trim();
+
+    await ConfigLoader.instance.addCustomMirror(
+      widget.source.id,
+      MirrorConfig(
+        name: name,
+        domain: domain,
+        baseUrl: baseUrlValue,
+      ),
+    );
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _deleteCustomMirror(String baseUrl) async {
+    await ConfigLoader.instance.removeCustomMirror(widget.source.id, baseUrl);
+    if (mounted) setState(() {});
+  }
+
+  /// 自动从发布页抓取镜像并直接设为可用镜像（无需手动勾选）。
+  ///
+  /// [manual] 为 true 时（点按云下载按钮）展示加载弹窗；首次进入页面的自动抓取
+  /// 静默进行，仅在抓取完成后用 Snackbar 提示新增数量。[addCustomMirror] 内部
+  /// 已按 baseUrl 去重，重复的声明/自定义镜像不会重复写入。
+  Future<void> _autoExtractFromPublish({bool manual = false}) async {
+    final l10n = AppLocalizations.of(context);
+    final publishPageUrl = widget.source.site.publishPageUrl;
+    if (publishPageUrl == null || publishPageUrl.trim().isEmpty) return;
+    if (_extracting) return;
+    _extracting = true;
+
+    BuildContext? dialogCtx;
+    if (manual) {
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) {
+          dialogCtx = ctx;
+          return AppAlertDialog(
+            content: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                const CircularProgressIndicator(),
+                const SizedBox(width: AppTokens.spaceMd),
+                Text(l10n.mirrorExtracting),
+              ],
+            ),
+          );
+        },
+      );
+    }
+
+    List<MirrorConfig> candidates;
+    try {
+      candidates = await PublishPageMirrorExtractor().extract(
+        publishPageUrl,
+        selector: widget.source.site.publishMirrorSelector,
+      );
+    } catch (_) {
+      candidates = const <MirrorConfig>[];
+    } finally {
+      _extracting = false;
+      if (dialogCtx != null && mounted) Navigator.of(dialogCtx!).pop();
+    }
+
+    if (!mounted) return;
+
+    if (candidates.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.mirrorNoMirrorsExtracted)),
+      );
+      return;
+    }
+
+    // 去重并自动添加为镜像（无需确认）。
+    final existing = <String>{
+      ...widget.source.site.mirrors.map((m) => m.baseUrl),
+      ...ConfigLoader.instance
+          .getCustomMirrors(widget.source.id)
+          .map((m) => m.baseUrl),
+    };
+    var added = 0;
+    for (final m in candidates) {
+      if (existing.contains(m.baseUrl)) continue;
+      await ConfigLoader.instance.addCustomMirror(widget.source.id, m);
+      added++;
+    }
+    if (mounted) setState(() {});
+    if (added > 0 && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.mirrorAutoAdded(added))),
+      );
+    }
+  }
+
+  /// 自动从源自带的 `mirrors` 路由获取镜像并添加为可用镜像（无需手动）。
+  ///
+  /// 与发布页提取类似，仅在尚未添加过自定义镜像时自动执行一次。该路由为纯 JS
+  /// （[ScriptResolver.resolveFromHtml] 不经网络预取），即使主域失效也能返回内置
+  /// 备用域名列表，因此「域名挂了也能给出可切换的镜像」。返回格式由源声明：
+  /// `[{name, domain, baseUrl}]`，[addCustomMirror] 内部已按 baseUrl 去重。
+  Future<void> _autoFetchFromRoute() async {
+    if (!widget.source.routes.containsKey('mirrors')) return;
+    if (_extracting) return;
+    _extracting = true;
+    try {
+      final result = await ScriptResolver().resolveFromHtml(
+        widget.source,
+        'mirrors',
+        '',
+      );
+      if (result is! List) return;
+      final existing = <String>{
+        ...widget.source.site.mirrors.map((m) => m.baseUrl),
+        ...ConfigLoader.instance
+            .getCustomMirrors(widget.source.id)
+            .map((m) => m.baseUrl),
+      };
+      var added = 0;
+      for (final e in result) {
+        if (e is! Map) continue;
+        final baseUrl = (e['baseUrl'] ?? '').toString().trim();
+        if (baseUrl.isEmpty) continue;
+        if (existing.contains(baseUrl)) continue;
+        final uri = Uri.tryParse(baseUrl);
+        final host = uri?.host ?? '';
+        await ConfigLoader.instance.addCustomMirror(
+          widget.source.id,
+          MirrorConfig(
+            name: (e['name'] ?? host).toString(),
+            domain: (e['domain'] ?? host).toString(),
+            baseUrl: baseUrl,
+          ),
+        );
+        existing.add(baseUrl);
+        added++;
+      }
+      if (mounted) setState(() {});
+      if (added > 0 && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).mirrorAutoAdded(added)),
+          ),
+        );
+      }
+    } catch (_) {
+      // 静默失败，不影响镜像页其余功能
+    } finally {
+      _extracting = false;
+    }
+  }
+
+  Widget _buildTile(MirrorConfig m, {required bool isCustom}) {
+    final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    final speed = _speeds[m.baseUrl];
+    final testing = _testing.contains(m.baseUrl);
+    final failed = _failed.contains(m.baseUrl);
+    return AppListTile(
+      leading: CircleAvatar(
+        backgroundColor: scheme.primaryContainer,
+        child: Text(
+          m.name.isNotEmpty ? m.name[0].toUpperCase() : '?',
+          style: TextStyle(color: scheme.onPrimaryContainer),
+        ),
+      ),
+      title: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Flexible(child: Text(m.name)),
+          if (isCustom) ...<Widget>[
+            const SizedBox(width: AppTokens.spaceSm),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppTokens.spaceXs + 2,
+                vertical: AppTokens.spaceXs,
+              ),
+              decoration: BoxDecoration(
+                color: scheme.tertiaryContainer,
+                borderRadius: BorderRadius.circular(AppTokens.radiusSm),
+              ),
+              child: Text(
+                l10n.mirrorCustom,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: scheme.onTertiaryContainer,
+                    ),
+              ),
+            ),
+          ],
+        ],
+      ),
+      subtitle: Text(
+        m.domain,
+        style: TextStyle(color: scheme.onSurfaceVariant),
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          if (testing)
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: scheme.primary,
+              ),
+            )
+          else if (failed)
+            Icon(Icons.error_rounded, color: scheme.error, size: 16)
+          else if (speed != null)
+            Text(
+              l10n.mirrorTestResultMs(speed),
+              style: Theme.of(context).textTheme.bodySmall,
+            )
+          else
+            const SizedBox.shrink(),
+          AppIconButton(
+            icon: Icons.speed_rounded,
+            tooltip: l10n.mirrorTest,
+            onPressed: () => _testSpeed(m.baseUrl),
+          ),
+          if (isCustom)
+            AppIconButton(
+              icon: Icons.delete_rounded,
+              tooltip: l10n.mirrorDelete,
+              onPressed: () => _deleteCustomMirror(m.baseUrl),
+            ),
+          Radio<String>(
+            value: m.baseUrl,
+          ),
+        ],
+      ),
+      onTap: () => _select(m.baseUrl),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    final declared = widget.source.site.mirrors;
+    final custom = ConfigLoader.instance.getCustomMirrors(widget.source.id);
+    final hasPublishPage =
+        widget.source.site.publishPageUrl?.trim().isNotEmpty ?? false;
+
+    final entries = RadioGroup<String>(
+      groupValue: _activeBaseUrl,
+      onChanged: (v) {
+        if (v != null) _select(v);
+      },
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          ...declared.map((m) => _buildTile(m, isCustom: false)),
+          if (declared.isNotEmpty && custom.isNotEmpty)
+            const Divider(height: 1),
+          ...custom.map((m) => _buildTile(m, isCustom: true)),
+        ],
+      ),
+    );
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.source.name),
+        actions: <Widget>[
+          if (hasPublishPage)
+            AppIconButton(
+              icon: Icons.cloud_download_rounded,
+              tooltip: l10n.mirrorExtractFromPublish,
+              onPressed: () => _autoExtractFromPublish(manual: true),
+            ),
+          AppIconButton(
+            icon: Icons.speed_rounded,
+            tooltip: l10n.mirrorTestAll,
+            onPressed: _testingAll ? null : _testAll,
+          ),
+          AppIconButton(
+            icon: Icons.add_rounded,
+            tooltip: l10n.mirrorAddCustom,
+            onPressed: _showAddCustomMirrorDialog,
+          ),
+        ],
+      ),
+      body: (declared.isEmpty && custom.isEmpty)
+          ? AppEmptyState(
+              icon: Icons.dns_rounded, message: l10n.mirrorNoMirrors)
+          : ListView(
+              padding: context.pageInset(AppTokens.spaceLg),
+              children: <Widget>[
+                entries,
+                const SizedBox(height: AppTokens.spaceLg),
+                Container(
+                  padding: const EdgeInsets.all(AppTokens.spaceMd),
+                  decoration: BoxDecoration(
+                    color: scheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(AppTokens.radiusMd),
+                  ),
+                  child: Row(
+                    children: <Widget>[
+                      Icon(Icons.lock_rounded,
+                          size: 16, color: scheme.onSurfaceVariant),
+                      const SizedBox(width: AppTokens.spaceSm),
+                      Expanded(
+                        child: Text(
+                          l10n.mirrorStealthLocked,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(color: scheme.onSurfaceVariant),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+}

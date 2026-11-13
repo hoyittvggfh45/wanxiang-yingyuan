@@ -1,0 +1,697 @@
+/// 内置网页浏览器。
+///
+/// 顶部地址栏 + 前进/后退/刷新；主体 [InAppWebView]；右上菜单：复制链接 / 分享 /
+/// 用此页完成验证。验证完成后回写 Cookie 到 [HttpFetcher]，支持作为验证兜底。
+///
+/// 在不支持 [InAppWebView] 的平台（如 Web）显示提示并回退到外部浏览器。
+library;
+
+import 'dart:async';
+
+import 'package:material_ui/material_ui.dart';
+import 'package:flutter/services.dart';
+import 'package:wxyy/generated/app_localizations.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../../core/models/plugin_config.dart';
+import '../../../core/network/runtime/webview_source_network.dart';
+import '../../../core/platform/platform_service.dart';
+import '../../../core/scraper/http_fetcher.dart';
+import '../../../core/theme/app_tokens.dart';
+import '../../home/presentation/browse_sniffer_screen.dart';
+import 'package:wxyy/core/navigation/app_page_route.dart';
+
+/// 内置浏览器页面。
+///
+/// [initialUrl] 为初始加载地址（可选；为空时显示空白页等待用户输入）。
+/// [source] 为关联源（可选）：非 null 时 WebView 跟随该源的网络覆盖
+/// （内置 hosts / DoH / 代理，见 [WebviewSourceNetwork]），Windows 上挂到
+/// 带启动参数的 WebView2 环境；为 null 时若已有其它源的跟随在生效则同样挂载。
+///
+/// 返回值：`true` 表示用户点击了「用此页完成验证」（此时 Cookie 已同步到
+/// [HttpFetcher]）；`false` / `null` 表示用户直接关闭。
+class HttpBrowserScreen extends StatefulWidget {
+  final String? initialUrl;
+  final PluginConfig? source;
+
+  /// 是否在「验证模式」下运行。此时一旦加载到真实（非验证挑战）页，自动把
+  /// Cookie 同步回 [HttpFetcher] 并关闭返回成功，省去手动点「用此页完成验证」。
+  /// 普通浏览（嗅探、复制链接等）保持 false，不受影响。
+  final bool verifyMode;
+
+  const HttpBrowserScreen({
+    super.key,
+    this.initialUrl,
+    this.source,
+    this.verifyMode = false,
+  });
+
+  @override
+  State<HttpBrowserScreen> createState() => _HttpBrowserScreenState();
+}
+
+class _HttpBrowserScreenState extends State<HttpBrowserScreen> {
+  final TextEditingController _addressController = TextEditingController();
+  final FocusNode _addressFocus = FocusNode();
+  InAppWebViewController? _webViewController;
+  bool _canGoBack = false;
+  bool _canGoForward = false;
+  bool _loading = false;
+  bool _pageLoaded = false;
+  String? _currentUrl;
+
+  /// WebView2 环境（Windows --proxy-server 跟随）；其余平台 / 无覆盖时为 null。
+  WebViewEnvironment? _env;
+
+  /// 网络跟随就绪前不创建 WebView（env 是创建期参数，后补无效）。
+  bool _envReady = false;
+
+  /// applyForSource 的在途 Future：dispose 时先等它完成再 release，保证引用
+  /// 计数严格配对（apply 在 `_refCount++` 前返回时 release 会空转）。
+  Future<void>? _applyFuture;
+
+  /// 加载看门狗：release 包下个别 WebView 版本可能不触发 onLoadStop，
+  /// 导致 [_loading] 永久为 true（一直转圈）。超时后强制解除加载态。
+  Timer? _loadWatchdog;
+
+  void _startLoadWatchdog() {
+    _loadWatchdog?.cancel();
+    _loadWatchdog = Timer(const Duration(seconds: 12), () {
+      if (mounted && _loading) {
+        setState(() {
+          _loading = false;
+          _pageLoaded = true;
+        });
+      }
+    });
+  }
+
+  void _stopLoadWatchdog() => _loadWatchdog?.cancel();
+
+  /// 验证模式下是否已自动完成过一次验证回灌，避免重复 pop。
+  bool _autoVerified = false;
+
+  /// 当前平台是否支持内置浏览器（[InAppWebView] 在 Web 不可用）。
+  bool get _isAvailable => !PlatformService.instance.isWeb;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentUrl = widget.initialUrl;
+    if (widget.initialUrl != null) {
+      _addressController.text = widget.initialUrl!;
+    }
+    final source = widget.source;
+    if (source == null) {
+      // 无关联源：直接挂当前生效环境（如验证流程已开跟随），无则保持原行为。
+      _env = WebviewSourceNetwork.instance.activeEnvironment;
+      _envReady = true;
+    } else {
+      _applyFuture = WebviewSourceNetwork.instance
+          .applyForSource(source)
+          .then((_) async {
+        final env = WebviewSourceNetwork.instance.activeEnvironment;
+        if (mounted) {
+          setState(() {
+            _env = env;
+            _envReady = true;
+          });
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _loadWatchdog?.cancel();
+    _addressController.dispose();
+    _addressFocus.dispose();
+    if (widget.source != null) {
+      final apply = _applyFuture;
+      if (apply != null) {
+        // dispose 先于 apply 完成时，等 apply 落地（含引用计数自增）后再释放。
+        unawaited(apply.whenComplete(
+          () => WebviewSourceNetwork.instance.releaseForSource(),
+        ));
+      } else {
+        unawaited(WebviewSourceNetwork.instance.releaseForSource());
+      }
+    }
+    super.dispose();
+  }
+
+  /// 规范化用户输入：无 scheme 时补 https://；无明显域名时当作搜索词。
+  String _normalizeUrl(String input) {
+    final trimmed = input.trim();
+    if (trimmed.isEmpty) return '';
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return trimmed;
+    }
+    // 含空格或无点号时视为搜索词，回退到搜索引擎。
+    if (!trimmed.contains('.') || trimmed.contains(' ')) {
+      return 'https://www.google.com/search?q=${Uri.encodeComponent(trimmed)}';
+    }
+    return 'https://$trimmed';
+  }
+
+  Future<void> _navigate(String input) async {
+    final url = _normalizeUrl(input);
+    if (url.isEmpty) return;
+    _addressController.text = url;
+    _addressFocus.unfocus();
+    final controller = _webViewController;
+    if (controller == null) return;
+    await controller.loadUrl(urlRequest: URLRequest(url: WebUri(url)));
+  }
+
+  Future<void> _goBack() async {
+    final controller = _webViewController;
+    if (controller == null) return;
+    if (await controller.canGoBack()) {
+      await controller.goBack();
+    }
+  }
+
+  Future<void> _goForward() async {
+    final controller = _webViewController;
+    if (controller == null) return;
+    if (await controller.canGoForward()) {
+      await controller.goForward();
+    }
+  }
+
+  Future<void> _refresh() async {
+    final controller = _webViewController;
+    if (controller == null) return;
+    await controller.reload();
+  }
+
+  /// 仅在地址栏未获得焦点时回填地址，避免覆盖用户正在输入的内容。
+  void _syncAddress(String? url) {
+    if (url == null || url.isEmpty) return;
+    _currentUrl = url;
+    if (!_addressFocus.hasFocus) {
+      _addressController.text = url;
+    }
+  }
+
+  /// 复制当前链接到剪贴板。
+  void _copyLink() {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final url = _currentUrl;
+    if (url == null || url.isEmpty) return;
+    Clipboard.setData(ClipboardData(text: url));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.browserLinkCopied)),
+    );
+  }
+
+  /// 分享当前链接（复制到剪贴板 + 提示，与项目现有 share 行为一致）。
+  void _shareLink() {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final url = _currentUrl;
+    if (url == null || url.isEmpty) return;
+    Clipboard.setData(ClipboardData(text: url));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.shareCopied)),
+    );
+  }
+
+  /// 将当前页 Cookie 同步到 [HttpFetcher] 并返回，作为验证兜底。
+  Future<void> _useAsVerification() async {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final url = _currentUrl;
+    if (url == null || url.isEmpty) return;
+    await _syncCookiesToFetcher(url);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.browserUseAsVerificationDone)),
+    );
+    // 同 onLoadStop：菜单项 onSelected 与本页 pop 之间存在路由被压栈的窗口，
+    // 非栈顶时擅自 pop 会把 bool 结果弹给别的路由（类型断言崩溃）。
+    if (ModalRoute.of(context)?.isCurrent == true) {
+      Navigator.of(context).pop(true);
+    }
+  }
+
+  /// 打开「视频嗅探模式」：在当前页基础上拦截动态加载的串流。
+  ///
+  /// 若用户已在内置浏览器打开了一个视频页，则把当前地址带入嗅探器作为初始
+  /// 地址，省去再次输入。
+  void _openSniffer() {
+    Navigator.of(context).push(
+      AppPageRoute<void>(
+        builder: (_) => BrowseSnifferScreen(
+          initialUrl: _currentUrl,
+          source: widget.source,
+        ),
+      ),
+    );
+  }
+
+  /// 读取 [InAppWebView] 的 [CookieManager] Cookie 写回 [HttpFetcher]（best-effort）。
+  ///
+  /// Cookie 存储必须绑定 WebView 所在的 WebView2 环境（Windows 上挂
+  /// --proxy-server 的是独立 profile）：用默认 `CookieManager.instance()`
+  /// 会读到空存储 → 页面上已通过的验证/Cookie 回灌不到 HttpFetcher。
+  Future<void> _syncCookiesToFetcher(String url) async {
+    try {
+      final uri = Uri.tryParse(url);
+      if (uri == null) return;
+      final cookies = await CookieManager.instance(
+        webViewEnvironment: _env,
+      ).getCookies(
+        url: WebUri('${uri.scheme}://${uri.host}'),
+      );
+      if (cookies.isEmpty) return;
+      final cookieHeader = cookies
+          .where((c) => c.value.isNotEmpty)
+          .map((c) => '${c.name}=${c.value}')
+          .join('; ');
+      if (cookieHeader.isNotEmpty) {
+        HttpFetcher.instance.syncCookies(uri.host, cookieHeader);
+      }
+    } catch (_) {
+      // Cookie 读取失败不影响主流程。
+    }
+  }
+
+  /// 判断当前 WebView 页面是否为「验证/反爬挑战页」。
+  ///
+  /// 通过 [InAppWebView] 执行 JS 读取页面 HTML，匹配常见挑战特征
+  /// （`_guard` 滑块、`系统安全验证`、geetest、turnstile、captcha 等）。
+  /// 无法判定（异常/空页面）时保守返回 false（不自动回灌，留手动兜底）。
+  Future<bool> _isChallengePage(InAppWebViewController controller) async {
+    try {
+      final result = await controller.evaluateJavascript(
+        source: '(() => {'
+            'var h = (document && document.documentElement && '
+            'document.documentElement.outerHTML) ? '
+            'document.documentElement.outerHTML.toLowerCase() : "";'
+            'return /_guard|系统安全验证|geetest|slider_html|turnstile|cf_chl|'
+            'captcha|verify you are human|人机|滑块|滑动|访问验证|安全验证|challenge/'
+            '.test(h);'
+            '})()',
+      );
+      if (result is bool) return result;
+      if (result is String) return result.toLowerCase() == 'true';
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    if (!_isAvailable) {
+      return _buildUnavailableScaffold(context, l10n);
+    }
+    // 网络跟随就绪前不创建 WebView：webViewEnvironment 是创建期参数，创建后
+    // 再挂无效（Windows --proxy-server 启动参数只在环境创建时生效）。
+    if (!_envReady) {
+      return Scaffold(
+        appBar: AppBar(title: Text(l10n.browserTitle)),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    return _buildBrowserScaffold(context, l10n);
+  }
+
+  /// 平台不支持 [InAppWebView] 时的回退视图。
+  Widget _buildUnavailableScaffold(BuildContext context, AppLocalizations l10n) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    return Scaffold(
+      appBar: AppBar(title: Text(l10n.browserTitle)),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppTokens.spaceXl),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(
+                Icons.browse_gallery_rounded,
+                size: 72,
+                color: scheme.primary.withValues(alpha: 0.7),
+              ),
+              const SizedBox(height: AppTokens.spaceLg),
+              Text(
+                l10n.browserNotAvailable,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+              ),
+              const SizedBox(height: AppTokens.spaceLg),
+              if (widget.initialUrl != null)
+                FilledButton.icon(
+                  onPressed: () => launchUrl(
+                    Uri.parse(widget.initialUrl!),
+                    mode: LaunchMode.externalApplication,
+                  ),
+                  icon: const Icon(Icons.open_in_browser_rounded),
+                  label: Text(l10n.openInBrowser),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBrowserScaffold(BuildContext context, AppLocalizations l10n) {
+    final bool isCompact = MediaQuery.of(context).size.width < 600;
+    return Scaffold(
+      appBar: AppBar(
+        titleSpacing: AppTokens.spaceSm,
+        leading: IconButton(
+          icon: const Icon(Icons.close_rounded),
+          tooltip: l10n.cancel,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        title: _buildAddressField(context, l10n),
+        actions: isCompact
+            ? <Widget>[
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert_rounded),
+                  tooltip: l10n.browserTitle,
+                  onSelected: (String value) {
+                    switch (value) {
+                      case 'copy':
+                        _copyLink();
+                        break;
+                      case 'share':
+                        _shareLink();
+                        break;
+                      case 'verify':
+                        _useAsVerification();
+                        break;
+                      case 'sniffer':
+                        _openSniffer();
+                        break;
+                    }
+                  },
+                  itemBuilder: (BuildContext context) =>
+                      <PopupMenuEntry<String>>[
+                    PopupMenuItem<String>(
+                      value: 'copy',
+                      child: Row(
+                        children: <Widget>[
+                          const Icon(Icons.link_rounded, size: 20),
+                          const SizedBox(width: AppTokens.spaceMd),
+                          Text(l10n.browserCopyLink),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem<String>(
+                      value: 'share',
+                      child: Row(
+                        children: <Widget>[
+                          const Icon(Icons.share_rounded, size: 20),
+                          const SizedBox(width: AppTokens.spaceMd),
+                          Text(l10n.browserShare),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem<String>(
+                      value: 'verify',
+                      child: Row(
+                        children: <Widget>[
+                          const Icon(Icons.verified_user_rounded, size: 20),
+                          const SizedBox(width: AppTokens.spaceMd),
+                          Text(l10n.browserUseAsVerification),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem<String>(
+                      value: 'sniffer',
+                      child: Row(
+                        children: <Widget>[
+                          const Icon(Icons.cable_rounded, size: 20),
+                          const SizedBox(width: AppTokens.spaceMd),
+                          Text(l10n.browserOpenSniffer),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ]
+            : <Widget>[
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_rounded),
+                  tooltip: l10n.browserBack,
+                  onPressed: _canGoBack ? _goBack : null,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.arrow_forward_rounded),
+                  tooltip: l10n.browserForward,
+                  onPressed: _canGoForward ? _goForward : null,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.refresh_rounded),
+                  tooltip: l10n.browserRefresh,
+                  onPressed: _refresh,
+                ),
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert_rounded),
+                  tooltip: l10n.browserTitle,
+                  onSelected: (String value) {
+                    switch (value) {
+                      case 'copy':
+                        _copyLink();
+                        break;
+                      case 'share':
+                        _shareLink();
+                        break;
+                      case 'verify':
+                        _useAsVerification();
+                        break;
+                      case 'sniffer':
+                        _openSniffer();
+                        break;
+                    }
+                  },
+                  itemBuilder: (BuildContext context) =>
+                      <PopupMenuEntry<String>>[
+                    PopupMenuItem<String>(
+                      value: 'copy',
+                      child: Row(
+                        children: <Widget>[
+                          const Icon(Icons.link_rounded, size: 20),
+                          const SizedBox(width: AppTokens.spaceMd),
+                          Text(l10n.browserCopyLink),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem<String>(
+                      value: 'share',
+                      child: Row(
+                        children: <Widget>[
+                          const Icon(Icons.share_rounded, size: 20),
+                          const SizedBox(width: AppTokens.spaceMd),
+                          Text(l10n.browserShare),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem<String>(
+                      value: 'verify',
+                      child: Row(
+                        children: <Widget>[
+                          const Icon(Icons.verified_user_rounded, size: 20),
+                          const SizedBox(width: AppTokens.spaceMd),
+                          Text(l10n.browserUseAsVerification),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem<String>(
+                      value: 'sniffer',
+                      child: Row(
+                        children: <Widget>[
+                          const Icon(Icons.cable_rounded, size: 20),
+                          const SizedBox(width: AppTokens.spaceMd),
+                          Text(l10n.browserOpenSniffer),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+      ),
+      body: Stack(
+        children: <Widget>[
+          InAppWebView(
+            webViewEnvironment: _env,
+            initialUrlRequest: widget.initialUrl != null
+                ? URLRequest(url: WebUri(widget.initialUrl!))
+                : null,
+            initialSettings: InAppWebViewSettings(
+              javaScriptEnabled: true,
+              mediaPlaybackRequiresUserGesture: false,
+              useShouldOverrideUrlLoading: true,
+            ),
+            onWebViewCreated: (controller) {
+              _webViewController = controller;
+            },
+            shouldOverrideUrlLoading: (controller, navigationAction) async {
+              return NavigationActionPolicy.ALLOW;
+            },
+            onLoadStart: (controller, url) {
+              if (mounted) setState(() => _loading = true);
+              _startLoadWatchdog();
+              _syncAddress(url?.toString());
+            },
+            onLoadStop: (controller, url) async {
+              _canGoBack = await controller.canGoBack();
+              _canGoForward = await controller.canGoForward();
+              _syncAddress(url?.toString());
+              _stopLoadWatchdog();
+              if (mounted) {
+                setState(() {
+                  _loading = false;
+                  _pageLoaded = true;
+                });
+              }
+              // 验证模式：一旦加载到真实（非挑战）页，自动回灌 Cookie 并返回成功，
+              // 省去手动点「用此页完成验证」。挑战页（含 _guard 等）不会触发。
+              if (widget.verifyMode &&
+                  !_autoVerified &&
+                  url != null &&
+                  url.toString().startsWith('http')) {
+                final isChallenge = await _isChallengePage(controller);
+                if (!isChallenge) {
+                  _autoVerified = true;
+                  await _syncCookiesToFetcher(url.toString());
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(l10n.browserUseAsVerificationDone),
+                      ),
+                    );
+                    await Future.delayed(const Duration(milliseconds: 700));
+                    // 仅当本页仍是栈顶时才带结果返回。这 700ms 窗口里用户可能已
+                    // 点开 AppBar 的三点菜单——PopupMenuButton 内部会 push 一条
+                    // _PopupMenuRoute<String?>，此时 pop(true) 是把 bool 弹给它：
+                    // 「A request was made to pop a route with a result of type
+                    // bool, but the route expected a value of type String?」直接
+                    // 抛未捕获异常。非栈顶时静默跳过（_autoVerified 已置位，不会
+                    // 重复触发；用户仍可经菜单手动「用此页完成验证」）。
+                    if (mounted && ModalRoute.of(context)?.isCurrent == true) {
+                      Navigator.of(context).pop(true);
+                    }
+                  }
+                }
+              }
+            },
+            onUpdateVisitedHistory:
+                (controller, url, androidIsReload) async {
+              _canGoBack = await controller.canGoBack();
+              _canGoForward = await controller.canGoForward();
+              _syncAddress(url?.toString());
+              if (mounted) setState(() {});
+            },
+          ),
+          // 加载进度条：吸附顶部。
+          if (_loading)
+            const Align(
+              alignment: Alignment.topCenter,
+              child: LinearProgressIndicator(),
+            ),
+          // 首次加载前的占位指示。
+          if (widget.initialUrl != null && !_pageLoaded)
+            const Center(child: CircularProgressIndicator()),
+        ],
+      ),
+      bottomNavigationBar: isCompact
+          ? _buildBottomBar(context, l10n)
+          : null,
+    );
+  }
+
+  /// 窄屏底栏：后退 / 刷新 / 用此页完成验证 / 嗅探 / 前进。
+  /// 用纯 Container 而非 BottomAppBar，避免 SafeArea/默认 padding 干扰，高度完全由 SizedBox 决定。
+  Widget _buildBottomBar(BuildContext context, AppLocalizations l10n) {
+    final theme = Theme.of(context);
+    // 抬高内容，避免被 Android 系统导航条/手势指示条遮挡。
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainer,
+        border: Border(
+          top: BorderSide(color: theme.dividerColor, width: 1),
+        ),
+      ),
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: SizedBox(
+        height: 50,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: <Widget>[
+            IconButton(
+              icon: const Icon(Icons.arrow_back_rounded, size: 16),
+              iconSize: 18,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 36),
+              padding: EdgeInsets.zero,
+              tooltip: l10n.browserBack,
+              onPressed: _canGoBack ? _goBack : null,
+            ),
+            IconButton(
+              icon: const Icon(Icons.refresh_rounded, size: 16),
+              iconSize: 18,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 36),
+              padding: EdgeInsets.zero,
+              tooltip: l10n.browserRefresh,
+              onPressed: _refresh,
+            ),
+            IconButton(
+              icon: const Icon(Icons.verified_user_rounded, size: 16),
+              iconSize: 18,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 36),
+              padding: EdgeInsets.zero,
+              tooltip: l10n.browserUseAsVerification,
+              onPressed: _useAsVerification,
+            ),
+            IconButton(
+              icon: const Icon(Icons.cable_rounded, size: 16),
+              iconSize: 18,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 36),
+              padding: EdgeInsets.zero,
+              tooltip: l10n.browserOpenSniffer,
+              onPressed: _openSniffer,
+            ),
+            IconButton(
+              icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+              iconSize: 18,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 36),
+              padding: EdgeInsets.zero,
+              tooltip: l10n.browserForward,
+              onPressed: _canGoForward ? _goForward : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 顶部地址输入框。
+  Widget _buildAddressField(BuildContext context, AppLocalizations l10n) {
+    return TextField(
+      controller: _addressController,
+      focusNode: _addressFocus,
+      keyboardType: TextInputType.url,
+      textInputAction: TextInputAction.go,
+      decoration: InputDecoration(
+        hintText: l10n.browserAddressHint,
+        prefixIcon: const Icon(Icons.search_rounded, size: 20),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppTokens.radiusFull),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppTokens.spaceMd,
+          vertical: AppTokens.spaceMd,
+        ),
+      ),
+      onSubmitted: _navigate,
+    );
+  }
+
+}

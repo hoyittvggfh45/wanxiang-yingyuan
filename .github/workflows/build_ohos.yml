@@ -1,0 +1,563 @@
+# =============================================================================
+# NexHub 鸿蒙（OHOS）构建工作流
+# -----------------------------------------------------------------------------
+# 触发：推送 v* 标签自动发布，与 build.yml 共用**同一个标签、同一个 Release**：
+#       本工作流只负责编译鸿蒙 HAP，并把它追加到该标签的 Release（Android /
+#       Windows / Linux / macOS / iOS 产物由 build.yml 并行构建后一并发布）。
+#       鸿蒙不再单独发版，**不使用 `-ohos` 后缀标签**。
+#       也支持网页手动 Run workflow 试跑（产物走 artifact，不建 Release）。
+#
+# 产物：未签名 HAP（unsigned）——发布物一律不带签名，安装签名由下载用户
+#       自行完成（侧载惯例，端侧签名安装工具可直接安装 unsigned 包）。
+#
+# 平台说明（2026-10-18 实测定案）：必须使用 macOS(arm64) runner。
+#   flutter-ohos 3.47 线的宿主侧 AOT 工件只发布了 darwin-arm64 版
+#   （3.47.5 Release Notes：「宿主 gen_snapshot 三档均为 Mach-O 64-bit
+#   arm64」；3.47.7 的工件为 3.47.5 逐字节副本）。Windows/Linux 宿主缺少
+#   配套 gen_snapshot，会回落到旧内核档（kernel 130）而报
+#   「Can't load Kernel binary: Invalid kernel binary format version
+#   (expected 130, found 138)」。macOS runner 同时具备：
+#   - dart-sdk-darwin-arm64-ohos.zip（定制 Dart SDK 3.13.4/3.13.3）
+#   - ohos-arm64-*-darwin-x64/arm64 gen_snapshot（release AOT 可用）
+#   - setup-ohos 的 ohos-sdk-mac-arm64 包（DevEco 命令行工具）
+#
+# 依赖事实（2026-10-18 核实）：
+#   - ErBWs/setup-ohos@v2 支持 macOS runner（README：macOS/Windows 须用
+#     v2 + CLI 6.1.1.280 以上；26.0.0.821 提供 mac-arm64 SDK 包，
+#     对齐工程 compatibleSdkVersion 26.0.0）。
+#   - flutter-ohos SDK：atomgit oh-flutter/flutter_flutter tag
+#     3.47.7-ohos-1.0.0（本机同源实测；gitcode 无 3.47 线 tag）。
+#   - 仓库版 ohos/build-profile.json5 signingConfigs 为空数组 → CI 产物
+#     天然 unsigned，无需任何签名材料。
+#   - libmpv 内核由 media_kit_libs_ohos 的 CMake 构建期从 GitHub 下载校验，
+#     CI 直连无墙，无需预置。
+#
+# 已知风险：
+#   - gitcode 镜像随机挂死（本地经验）→ 预置 mirror 预热 + pub get 重试。
+#   - macOS runner 无 GNU timeout，先装 coreutils 使用 gtimeout。
+# =============================================================================
+
+name: build-ohos
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# PUB_CACHE 置于工作区内：与项目同盘（macOS 单根文件系统天然满足 hvigor 对
+# 插件 srcPath 的相对路径要求），并便于 actions/cache 持久化。
+env:
+  PUB_CACHE: ${{ github.workspace }}/pc
+
+jobs:
+  ohos:
+    name: HarmonyOS HAP (unsigned)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup HarmonyOS toolchain
+        uses: ErBWs/setup-ohos@v2
+        with:
+          version: "26.0.0.821"
+          cache: true
+
+      - name: Setup flutter-ohos SDK
+        shell: bash
+        run: |
+          for i in 1 2 3; do
+            if git clone --depth 1 -b 3.47.7-ohos-1.0.0 \
+                 https://atomgit.com/oh-flutter/flutter_flutter.git "$HOME/flutter-ohos"; then
+              break
+            fi
+            echo "clone failed (attempt $i/3), retrying..."
+            rm -rf "$HOME/flutter-ohos"
+            sleep $((i*15))
+          done
+          test -x "$HOME/flutter-ohos/bin/flutter"
+          ls "$HOME/flutter-ohos/bin" | head -5
+          echo "$HOME/flutter-ohos/bin" >> "$GITHUB_PATH"
+
+      - name: 修正 SDK 内失效的 git 依赖地址（上游仓库迁移）
+        # flutter_tools 的 dependency_overrides 指向 atomgit 上的一个 git 仓库，
+        # 该仓库已迁到 oh-flutter 组织，旧路径返回 403「project could not be
+        # found」，导致 flutter bootstrap 的 pub upgrade 必然失败（81~91s 后放弃）。
+        # 新仓库同名分支的 commit 与锁文件里的 resolved-ref 完全一致（31910fe1），
+        # 因此只换 URL、保留 pin 即可。
+        shell: bash
+        run: |
+          FT="$HOME/flutter-ohos/packages/flutter_tools"
+          OLD=atomgit.com/hxa-flutter/fluttertpc_dart_native
+          NEW=atomgit.com/oh-flutter/fluttertpc_dart_native
+          for f in "$FT/pubspec.yaml" "$FT/pubspec.lock"; do
+            if [ -f "$f" ]; then
+              sed -i '' "s#$OLD#$NEW#g" "$f"
+              printf '%s -> %s hits: %s\n' "$f" "$(basename "$f")" "$(grep -c "$NEW" "$f" || true)"
+            fi
+          done
+          if grep -rq "$OLD" "$FT" 2>/dev/null; then
+            echo "::error::仍存在失效的旧依赖地址"
+            exit 1
+          fi
+          echo "::notice::git 依赖地址已指向 oh-flutter/fluttertpc_dart_native"
+
+          # 定制 Dart SDK（225MB）来自国内 CDN，海外 runner 偶尔中途被 reset
+          # （curl 35）；脚本原有的 --retry 3 不覆盖该类错误，这里换成可续传的
+          # 强重试参数（--continue-at - 保留，断点接着下）。
+          UDS="$HOME/flutter-ohos/bin/internal/update_dart_sdk.sh"
+          sed -i '' \
+            's/--retry 3/--retry 20 --retry-all-errors --retry-delay 5 --speed-limit 1024 --speed-time 60/g' \
+            "$UDS"
+          grep -c "retry-all-errors" "$UDS"
+          echo "::notice::Dart SDK 下载已启用断点续传强重试"
+
+      - name: 缓存 flutter-ohos SDK 工件目录
+        # engine 工件全部来自华为云 OBS，海外 runner 偶发 DNS 解析失败；
+        # 命中缓存后 precache 只做本地校验，不再依赖每一次都能连上 OBS。
+        uses: actions/cache@v4
+        with:
+          path: ~/flutter-ohos/bin/cache
+          key: flutter-ohos-cache-3.47.7-ohos-1.0.0-${{ runner.os }}-${{ runner.arch }}-v2
+
+      - name: 检查 OBS 域名解析（系统 DNS 坏了才用 DoH 兜底钉 IP）
+        # 只在系统 DNS 解析不出记录时才写 /etc/hosts：正常时保留系统轮询，
+        # 避免把 CDN 域名钉死在单个节点上反而更不稳。
+        shell: bash
+        continue-on-error: true
+        run: |
+          HOST=flutter-ohos.obs.cn-south-1.myhuaweicloud.com
+          if dscacheutil -q host -a name "$HOST" 2>/dev/null | grep -q ip_address; then
+            echo "::notice::系统 DNS 正常解析 $HOST"
+            exit 0
+          fi
+          echo "::warning::系统 DNS 解析不出 $HOST，尝试 DoH"
+          IPS=""
+          for ep in \
+            "https://1.1.1.1/dns-query?name=$HOST&type=A" \
+            "https://dns.google/resolve?name=$HOST&type=A"; do
+            IPS=$(curl -sS --max-time 15 -H 'accept: application/dns-json' "$ep" 2>/dev/null \
+              | tr ',' '\n' | grep -oE '"data"[[:space:]]*:[[:space:]]*"[0-9.]+"' \
+              | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' | tr '\n' ' ' || true)
+            if [ -n "$IPS" ]; then echo "DoH ok via $ep: $IPS"; break; fi
+          done
+          if [ -n "$IPS" ]; then
+            for ip in $IPS; do echo "$ip $HOST" | sudo tee -a /etc/hosts >/dev/null; done
+            echo "::notice::已钉 $HOST -> $IPS"
+          else
+            echo "::warning::DoH 也拿不到记录，沿用系统解析"
+          fi
+
+      - name: 预热 SDK 工件（多重回退 + 失败诊断）
+        # flutter-ohos 的 engine 工件托管在华为云 OBS（海外 runner 偶发不可达）。
+        # 策略：先只拉 ohos 相关工件（体积小、命中率高），再退到全量 precache；
+        # 每档各 3 次退避重试。最终失败时把关键错误行打成 annotation——
+        # 这样即使拿不到 job 日志，也能从公开的 check-run 注解里看到真实原因。
+        shell: bash
+        run: |
+          set -o pipefail
+          : > precache.log
+
+          try_precache() {
+            label="$1"; shift
+            for i in 1 2 3; do
+              echo "::group::${label} (attempt $i/3)"
+              if flutter precache "$@" 2>&1 | tee -a precache.log; then
+                echo "::endgroup::"
+                return 0
+              fi
+              echo "::endgroup::"
+              echo "${label} attempt $i failed; last 10 lines:"
+              tail -n 10 precache.log || true
+              sleep $((i * 15))
+            done
+            return 1
+          }
+
+          if try_precache "precache --ohos" --ohos; then
+            echo "::notice::ohos 工件已就绪（增量通道）"
+            # 增量通道已够鸿蒙构建用；再尽力补一次全量，失败不阻断。
+            flutter precache > precache_all.log 2>&1 \
+              || echo "::warning::全量 precache 未完成（鸿蒙产物不受影响，缺件按需下载）"
+            exit 0
+          fi
+          echo "::warning::增量通道失败，退回全量 precache"
+          if try_precache "precache (all)"; then
+            echo "::notice::SDK 工件已全量就绪"
+            exit 0
+          fi
+
+          echo "=== OBS 连通性诊断 ==="
+          OBS_HOST=flutter-ohos.obs.cn-south-1.myhuaweicloud.com
+          curl -sS -o /dev/null \
+            -w "root http=%{http_code} dns=%{time_namelookup}s connect=%{time_connect}s total=%{time_total}s\n" \
+            --max-time 20 "https://$OBS_HOST/" || true
+          curl -sS -o /dev/null \
+            -w "artifact http=%{http_code} dns=%{time_namelookup}s total=%{time_total}s\n" \
+            --max-time 25 \
+            "https://$OBS_HOST/flutter_infra_release/flutter/10a8d012d86cd7ee13e0acc859fea796c8a01764/sky_engine.zip" || true
+          (dscacheutil -q host -a name "$OBS_HOST" || nslookup "$OBS_HOST") 2>&1 | head -10 || true
+
+          echo "=== 关键错误行（打成注解）==="
+          grep -aiE "Failed to download|Could not resolve|SocketException|HTTP status|Connection|timed out|Temporary failure|Handshake|403|404" precache.log \
+            | tail -n 6 | cut -c1-300 \
+            | while IFS= read -r line; do
+                echo "::error title=precache::${line//%/%25}"
+              done
+          echo "--- 末尾 30 行 ---"
+          tail -n 30 precache.log || true
+          echo "::error::flutter-ohos SDK 工件下载连续失败（真实原因见上方 precache 注解）"
+          exit 1
+
+      - name: Flutter doctor
+        shell: bash
+        run: |
+          flutter --version
+          flutter doctor || true
+
+      - name: 安装 coreutils（gtimeout）
+        shell: bash
+        run: |
+          brew install coreutils 2>&1 | tail -2 || true
+          which gtimeout || echo "gtimeout missing (fallback without timeout)"
+
+      - name: 缓存 ECH 引擎的 OpenSSL 静态库
+        # OpenSSL 交叉编译是整条 ECH 链路里最慢的一步；install 目录带
+        # .threads-ok 标记，脚本命中后直接跳过。key 绑定构建脚本（编译参数
+        # 一变就必须重编），不设 restore-keys 以免复用旧参数产物。
+        uses: actions/cache@v4
+        with:
+          path: android/rust/openssl/build-ohos-arm64/install
+          key: ech-ohos-openssl-${{ runner.os }}-${{ hashFiles('android/rust/build-ohos.sh') }}
+
+      - name: 缓存 ECH 引擎的 Rust 编译产物
+        # Cargo 指纹能识别源码变化，restore-keys 可安全复用同 OS 的旧缓存。
+        uses: actions/cache@v4
+        with:
+          path: android/rust/target
+          key: ech-ohos-target-${{ runner.os }}-${{ hashFiles('android/rust/Cargo.lock', 'android/rust/Cargo.toml', 'android/rust/build.rs', 'android/rust/src/**', 'android/rust/ech_helper.c') }}
+          restore-keys: |
+            ech-ohos-target-${{ runner.os }}-
+
+      - name: 编译 ECH 引擎（libechproxy.so）
+        # clean checkout 下 libs/arm64-v8a/libechproxy.so 被 gitignore，CI 必须
+        # 交叉编译后复制进 HAP 工程，否则 hvigor 打出的包没有 ECH 引擎。脚本会
+        # 自检 AArch64 架构、ECH helper 与四个导出符号，失败即中断发版。
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${OHOS_NDK_HOME:-}" ]; then
+            echo "::error::setup-ohos 未导出 OHOS_NDK_HOME"
+            exit 1
+          fi
+          # setup-ohos 把 OHOS_NDK_HOME 指向 openharmony 根目录（native 的父级），
+          # build-ohos.sh 会自动下钻到 native/。
+          echo "OHOS_NDK_HOME=$OHOS_NDK_HOME"
+          if [ ! -d "$OHOS_NDK_HOME/native/sysroot" ] && [ ! -d "$OHOS_NDK_HOME/sysroot" ]; then
+            echo "::error::OHOS_NDK_HOME 下找不到 sysroot"
+            exit 1
+          fi
+          command -v rustup >/dev/null 2>&1 || { echo "::error::runner 缺少 rustup"; exit 1; }
+          rustup target add aarch64-unknown-linux-ohos
+          bash android/rust/build-ohos.sh
+
+      - name: 缓存 pub cache
+        # 11 个 gitcode 依赖首次克隆成本高且易受网络随机挂死影响；
+        # 以 pubspec.lock 哈希为 key 缓存整个 pub cache，后续 run 直接命中。
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/pc
+          key: pub-cache-ohos-${{ hashFiles('pubspec.lock') }}
+          restore-keys: |
+            pub-cache-ohos-
+
+      - name: 配置 npm/ohpm 镜像与重试
+        # 参考同类项目经验：hvigor 内部 npm install pnpm / ohpm 拉包偶发
+        # ECONNRESET，华为云镜像 + 重试参数可显著降低抖动导致的失败。
+        shell: bash
+        run: |
+          npm config set registry https://repo.huaweicloud.com/repository/npm/ || true
+          npm config set fetch-retries 5 || true
+          npm config set fetch-retry-mintimeout 20000 || true
+          npm config set fetch-retry-maxtimeout 120000 || true
+          npm config set fetch-timeout 300000 || true
+          ohpm config set registry https://ohpm.openharmony.cn/ohpm/ || true
+          ohpm config set strict_ssl false || true
+
+      - name: 准备鸿蒙专用依赖（覆盖模板 + ohos 专属依赖 + 源码补丁）
+        # 主仓库只保留官方依赖集（官方 SDK 的 CI 不做任何鸿蒙换源）；
+        # 脚本与本地鸿蒙构建共用，避免两套流程漂移。
+        shell: bash
+        run: |
+          bash tool/ohos/prepare_ohos.sh
+
+      - name: 预热 git 依赖 mirror
+        # 解析 pubspec.lock 的 git 依赖，逐个 clone --mirror 到 pub cache
+        # （mirror 目录名 = <repo>-<sha1(url)>，与 pub 内部命名一致）。
+        # 单 repo 独立重试 + 超时，隔离随机挂死；pub 惰性 fetch，mirror
+        # 命中后 pub get 的 git 部分零网络。失败仅告警，pub get 在线兜底。
+        shell: bash
+        run: |
+          python3 - <<'PYEOF'
+          import hashlib, os, re, shutil, subprocess
+          cache = os.environ.get("PUB_CACHE") or os.path.join(os.path.expanduser("~"), "Pub", "Cache")
+          cachedir = os.path.join(cache, "git", "cache")
+          os.makedirs(cachedir, exist_ok=True)
+          urls = set()
+          for name in ("pubspec.lock", "pubspec.yaml", "pubspec_overrides.yaml"):
+              if not os.path.exists(name):
+                  continue
+              with open(name, encoding="utf-8") as f:
+                  for line in f:
+                      m = re.search(r'url:\s*"?((?:https?)://[^"\s]+\.git)"?', line)
+                      if m:
+                          urls.add(m.group(1))
+          print("::notice::git deps found: %d" % len(urls))
+          failed = []
+          for u in sorted(urls):
+              name = re.sub(r"\.git$", "", u.rstrip("/").split("/")[-1])
+              digest = hashlib.sha1(u.encode()).hexdigest()
+              mirror = os.path.join(cachedir, "%s-%s" % (name, digest))
+              if os.path.isdir(mirror):
+                  print("::notice::mirror hit %s" % name)
+                  continue
+              ok = False
+              for attempt in range(1, 4):
+                  try:
+                      r = subprocess.run(["git", "clone", "--mirror", u, mirror],
+                                         capture_output=True, text=True, timeout=300)
+                      rc, err = r.returncode, (r.stderr or "")
+                  except subprocess.TimeoutExpired:
+                      rc, err = -1, "timeout 300s"
+                  if rc == 0 and os.path.isdir(mirror):
+                      ok = True
+                      print("::notice::mirror ok %s (attempt %d)" % (name, attempt))
+                      break
+                  print("::warning::clone %s attempt %d rc=%s err=%s" % (name, attempt, rc, err[:140]))
+                  shutil.rmtree(mirror, ignore_errors=True)
+              if not ok:
+                  failed.append(name)
+                  print("::error::mirror FAILED %s -> %s" % (name, u))
+          if failed:
+              print("::warning::%d mirrors failed (will fall back to online clone): %s" % (len(failed), ",".join(failed)))
+          PYEOF
+
+      - name: 获取依赖
+        shell: bash
+        run: |
+          TO=""
+          if command -v gtimeout >/dev/null 2>&1; then TO="gtimeout 900"; fi
+          for i in 1 2 3; do
+            $TO flutter pub get 2>&1 && exit 0
+            echo "pub get failed or hung (attempt $i), retrying..."
+            sleep 10
+          done
+          exit 1
+
+      - name: 生成国际化资源
+        shell: bash
+        run: |
+          flutter gen-l10n 2>&1
+          echo "== generated l10n files =="
+          ls -la lib/generated 2>&1 || true
+          grep -n "class AppLocalizations" lib/generated/app_localizations.dart 2>&1 || true
+
+      - name: 归一化 package_config 路径
+        # pub 可能把 git 依赖 rootUri 写成相对路径，而 hvigor 调起的 Dart
+        # 前端解析相对路径的基准可能错位。对每个相对 rootUri 做双基准
+        # 探测（以目录下存在 pubspec.yaml 为命中判据）并改写为绝对 URI；
+        # 随后对关键包做 lib 文件自检与 git 自愈。
+        shell: bash
+        run: |
+          python3 - <<'PYEOF'
+          import json, os, sys, urllib.request
+          from pathlib import Path
+          from urllib.parse import urlparse
+          def uri_to_path(uri):
+              # 跨平台：file:///D:/x -> D:/x (Windows)；file:///Users/x -> /Users/x (POSIX)
+              return urllib.request.url2pathname(urlparse(uri).path)
+          p = os.path.join(".dart_tool", "package_config.json")
+          with open(p, encoding="utf-8") as f:
+              cfg = json.load(f)
+          base_dd = os.path.abspath(".dart_tool")
+          base_root = os.path.abspath(".")
+          n = 0
+          bad = 0
+          for pkg in cfg.get("packages", []):
+              ru = pkg.get("rootUri", "")
+              if ru.startswith("../") or ru.startswith("./"):
+                  cands = [os.path.normpath(os.path.join(b, ru)) for b in (base_dd, base_root)]
+                  hit = None
+                  for c in cands:
+                      if os.path.exists(os.path.join(c, "pubspec.yaml")):
+                          hit = c
+                          break
+                  if hit is not None:
+                      pkg["rootUri"] = Path(hit).as_uri()
+                      n += 1
+                      if pkg.get("name") in ("shared_preferences", "url_launcher"):
+                          print("::notice::resolved %s -> %s" % (pkg["name"], hit))
+                  else:
+                      bad += 1
+                      print("::error::%s unresolvable: %s | c1=%s | c2=%s" % (pkg.get("name"), ru[:60], cands[0], cands[1]))
+          with open(p, "w", encoding="utf-8") as f:
+              json.dump(cfg, f, indent=2)
+          print("normalized %d relative, %d unresolvable" % (n, bad))
+          print("::notice::PUB_CACHE env = %s" % os.environ.get("PUB_CACHE", "<unset>"))
+          # 关键包自检：改写后的绝对路径必须真实存在其 Dart 库文件。
+          missing = False
+          for name, libf in (("shared_preferences", "lib/shared_preferences.dart"),
+                              ("url_launcher", "lib/url_launcher.dart")):
+              entry = next((x for x in cfg.get("packages", []) if x.get("name") == name), None)
+              if entry is None:
+                  print("::error::package %s missing from package_config" % name)
+                  missing = True
+                  continue
+              ru = entry.get("rootUri", "")
+              local = uri_to_path(ru) if ru.startswith("file:///") else None
+              if local is None:
+                  print("::error::%s rootUri not absolute: %s" % (name, ru))
+                  missing = True
+                  continue
+              dart_file = os.path.normpath(os.path.join(local, libf))
+              if os.path.exists(dart_file):
+                  print("::notice::%s OK: %s" % (name, dart_file))
+              else:
+                  print("::error::%s lib missing: %s (rootUri=%s)" % (name, dart_file, ru))
+                  try:
+                      import subprocess
+                      norm = local.replace("\\", "/")
+                      gi = norm.find("/git/")
+                      if gi >= 0:
+                          after = norm[gi + 5:]
+                          repo_root = norm[:gi + 5] + after.split("/")[0]
+                          rel_parts = after.split("/")[1:]
+                          cur = repo_root
+                          for i, part in enumerate(rel_parts):
+                              nxt = os.path.join(cur, part)
+                              if not os.path.exists(nxt):
+                                  try:
+                                      listing = sorted(os.listdir(cur))[:10]
+                                  except Exception as le:
+                                      listing = repr(le)
+                                  print("::error::break at level %d: %r missing under %s (listing=%s)" % (i, part, cur, listing))
+                                  break
+                              cur = nxt
+                          if os.path.isdir(os.path.join(repo_root, ".git")):
+                              r = subprocess.run(["git", "-C", repo_root, "checkout", "HEAD", "--", "."],
+                                                 capture_output=True, text=True, timeout=300)
+                              print("::notice::self-heal git checkout rc=%s stderr=%s" % (r.returncode, (r.stderr or "")[:120]))
+                      healed = os.path.exists(dart_file)
+                      if healed:
+                          print("::notice::self-heal %s: lib restored" % name)
+                      else:
+                          missing = True
+                          print("::error::self-heal %s: STILL MISSING" % name)
+                  except Exception as e:
+                      missing = True
+                      print("::error::diagnosis failed: %s" % e)
+          if bad or missing:
+              sys.exit(1)
+          PYEOF
+
+      - name: 编译 HAP（release，未签名）
+        shell: bash
+        run: |
+          set -o pipefail
+          # --no-tree-shake-icons：3.47 线 SDK 的 IconTreeShaker 读取 kernel 时
+          # 报 "Invalid SDK hash"（宿主 kernel 读取与 gen_snapshot 批次不一致，
+          # 上游 release 验证仅覆盖 debug 档）。关闭图标树摇只影响体积
+          # （Material 图标字体全量打包，约多 1-2MB），AOT 编译本身不受影响。
+          # --no-codesign：跳过签名配置校验，产出 entry-default-unsigned.hap
+          # （发布物统一零签名，安装签名由下载用户自行完成）。
+          flutter build hap --release --no-pub --no-tree-shake-icons --no-codesign --target-platform ohos-arm64 \
+            --dart-define=DANMAKU_APP_ID=${{ secrets.DANMAKU_APP_ID }} \
+            --dart-define=DANMAKU_APP_SECRET=${{ secrets.DANMAKU_APP_SECRET }} \
+            --dart-define=BANGUMI_CLIENT_ID=${{ secrets.BANGUMI_CLIENT_ID }} \
+            --dart-define=BANGUMI_CLIENT_SECRET=${{ secrets.BANGUMI_CLIENT_SECRET }} \
+            2>&1 | tee ohos_build.log || {
+              echo "=== OHOS BUILD FAILED ==="
+              tail -n 500 ohos_build.log
+              # 无条件输出日志尾部（兜底：错误不匹配任何模式时也能定位）；
+              # 再按模式优先输出首现解析错误与尾部错误行。
+              tail -n 10 ohos_build.log | cut -c1-380 \
+                | while IFS= read -r line; do echo "::error::tail: ${line//%/%25}"; done
+              grep -naE "Error when reading|Unable to read" ohos_build.log | head -n 6 | cut -c1-380 \
+                | while IFS= read -r line; do echo "::error::${line//%/%25}"; done
+              grep -naE "error:|Error:" ohos_build.log | tail -n 8 | cut -c1-380 \
+                | while IFS= read -r line; do echo "::error::${line//%/%25}"; done
+              exit 1; }
+
+      - name: 校验 ECH 引擎已打包 (libechproxy.so)
+        # 曾经的发布 HAP 因 clean checkout 缺 .so 而静默丢失 ECH（Dart 侧回落
+        # 直连，功能表面正常）。这里对最终 HAP 做硬校验：文件存在、体积正常、
+        # 四个 dart:ffi 入口符号齐全，任一不满足即失败。
+        shell: bash
+        run: |
+          set -euo pipefail
+          HAP=ohos/entry/build/default/outputs/default/entry-default-unsigned.hap
+          [ -f "$HAP" ] || { echo "::error::未找到 $HAP"; exit 1; }
+          ENTRY="$(unzip -l "$HAP" | grep -E 'libs/arm64-v8a/libechproxy\.so$' | tail -n1 || true)"
+          if [ -z "$ENTRY" ]; then
+            echo "::error::HAP 缺少 libs/arm64-v8a/libechproxy.so（ECH 引擎未打包）"
+            unzip -l "$HAP" | grep 'libs/' || true
+            exit 1
+          fi
+          SIZE="$(echo "$ENTRY" | awk '{print $1}')"
+          echo "已打包: $ENTRY"
+          if [ "$SIZE" -lt 2000000 ]; then
+            echo "::error::libechproxy.so 仅 $SIZE 字节，疑似空壳产物"
+            exit 1
+          fi
+          unzip -p "$HAP" libs/arm64-v8a/libechproxy.so > "$RUNNER_TEMP/libechproxy.so"
+          for SYM in ech_start_proxy ech_stop_proxy ech_is_alive ech_set_scope; do
+            grep -aq "$SYM" "$RUNNER_TEMP/libechproxy.so" \
+              || { echo "::error::libechproxy.so 缺少导出符号 $SYM"; exit 1; }
+          done
+          echo "ECH 引擎已打包且导出符号完整"
+
+      - name: 收集产物
+        shell: bash
+        run: |
+          cp ohos/entry/build/default/outputs/default/entry-default-unsigned.hap \
+            WanxiangYingyuan-ohos-arm64-unsigned.hap
+          ls -la WanxiangYingyuan-ohos-arm64-unsigned.hap
+
+      - name: 上传构建日志（失败时）
+        # 编译失败时把完整构建日志与 hvigor 详细日志作为 artifact；
+        # 注：artifact 下载需认证，匿名侧依赖上方 annotation 通道。
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ohos-build-log
+          path: |
+            ohos_build.log
+            precache.log
+            precache_all.log
+            ohos/.hvigor/outputs/build-logs/
+          if-no-files-found: ignore
+
+      - name: 上传产物（手动试跑）
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ohos-hap
+          path: WanxiangYingyuan-ohos-arm64-unsigned.hap
+          if-no-files-found: error
+
+      - name: 追加产物到 Release（与全平台同一条）
+        # 与 build.yml 共用同一个标签、同一个 Release：谁先跑完谁先建，后到的用
+        # allowUpdates 追加自己的文件。两边写入同一份 RELEASE_BODY.md，正文一致；
+        # 文件清单互不重叠（本步只加 HAP），故并发安全。
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: WanxiangYingyuan ${{ github.ref_name }}
+          body_path: RELEASE_BODY.md
+          allowUpdates: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          files: |
+            WanxiangYingyuan-ohos-arm64-unsigned.hap

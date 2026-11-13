@@ -1,0 +1,108 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "module description"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "description"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "万象影院"
+    },
+    {
+      "name": "keep_background_running_reason",
+      "value": "Downloads continue in the background"
+    },
+    {
+      "name": "EntryFormAbility_desc",
+      "value": "Home screen widget (continue watching, updates and weekly stats)"
+    },
+    {
+      "name": "EntryFormAbility_label",
+      "value": "万象影院"
+    },
+    {
+      "name": "widget_small_display_name",
+      "value": "Wxyy 继续观看"
+    },
+    {
+      "name": "widget_small_desc",
+      "value": "最近在看的作品，点一下接着看"
+    },
+    {
+      "name": "widget_medium_display_name",
+      "value": "万象影院"
+    },
+    {
+      "name": "widget_medium_desc",
+      "value": "继续观看 + 追更 / 下载 / 本周统计"
+    },
+    {
+      "name": "widget_large_display_name",
+      "value": "Wxyy 概览"
+    },
+    {
+      "name": "widget_large_desc",
+      "value": "大卡片：继续观看与三项摘要"
+    },
+    {
+      "name": "widget_updates_display_name",
+      "value": "Wxyy 追更"
+    },
+    {
+      "name": "widget_updates_desc",
+      "value": "收藏总数与最近收藏"
+    },
+    {
+      "name": "widget_downloads_display_name",
+      "value": "Wxyy 下载"
+    },
+    {
+      "name": "widget_downloads_desc",
+      "value": "进行中任务与整体进度"
+    },
+    {
+      "name": "widget_stats_display_name",
+      "value": "Wxyy 统计"
+    },
+    {
+      "name": "widget_stats_desc",
+      "value": "总时长、作品数与会话"
+    },
+    {
+      "name": "widget_heatmap_display_name",
+      "value": "Wxyy 热力图"
+    },
+    {
+      "name": "widget_heatmap_desc",
+      "value": "近 30 天阅读打卡格子"
+    },
+    {
+      "name": "widget_bignumber_display_name",
+      "value": "Wxyy 本周时长"
+    },
+    {
+      "name": "widget_bignumber_desc",
+      "value": "本周阅读时长的大数字卡"
+    },
+    {
+      "name": "widget_modules_display_name",
+      "value": "Wxyy 分模块"
+    },
+    {
+      "name": "widget_modules_desc",
+      "value": "小说 / 漫画 / 媒体 分开统计"
+    },
+    {
+      "name": "widget_streak_display_name",
+      "value": "Wxyy 连续打卡"
+    },
+    {
+      "name": "widget_streak_desc",
+      "value": "连续天数与今日时长"
+    }
+  ]
+}

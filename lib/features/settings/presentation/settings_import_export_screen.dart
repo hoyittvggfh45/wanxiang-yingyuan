@@ -1,0 +1,693 @@
+/// 数据导入 / 导出屏幕 —— 基于统一备份归档模块 [backup_archive]。
+///
+/// 与云同步共用同一 bundle 结构，支持：
+/// - 导出时按分类勾选（源与订阅 / 收藏书签 / 进度历史 / 设置偏好 / 下载 / 弹幕缓存）；
+/// - 导入时预览数据条数，并选择「合并（保留本地）」或「覆盖（以备份为准）」。
+library;
+
+import 'dart:io';
+import 'dart:math' as math;
+
+import 'package:file_picker/file_picker.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:provider/provider.dart';
+import 'package:wxyy/generated/app_localizations.dart';
+import 'package:path_provider/path_provider.dart';
+
+import '../../../core/platform/file_exporter.dart';
+import '../../../core/platform/platform_service.dart';
+import '../../../core/services/backup_archive.dart';
+import '../../../core/services/site_backup_service.dart';
+import '../../../core/services/source_repository.dart';
+import '../../../core/utils/app_log.dart';
+import '../../../core/settings/data_export_config.dart';
+import '../../../core/theme/app_tokens.dart';
+import '../../../core/widgets/app_alert_dialog.dart';
+import '../../../core/theme/app_theme.dart';
+import 'widgets/settings_widgets.dart';
+import '../../../core/widgets/backup_category_selector.dart';
+import '../../../core/widgets/app_glass_bar.dart';
+
+class SettingsImportExportScreen extends StatefulWidget {
+  const SettingsImportExportScreen({super.key});
+
+  @override
+  State<SettingsImportExportScreen> createState() =>
+      _SettingsImportExportScreenState();
+}
+
+class _SettingsImportExportScreenState
+    extends State<SettingsImportExportScreen> {
+  String _exportFolder = '';
+  final DataExportConfigStore _store = DataExportConfigStore();
+  Set<BackupCategory> _selected = <BackupCategory>{
+    BackupCategory.source,
+    BackupCategory.bookmark,
+    BackupCategory.progress,
+    BackupCategory.settings,
+    BackupCategory.download,
+    BackupCategory.danmaku,
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _store.load().then((config) {
+      if (mounted) setState(() => _exportFolder = config.exportFolder);
+    });
+  }
+
+  Future<String?> _pickExportFolder() async {
+    final result = await FilePicker.platform.getDirectoryPath(
+      initialDirectory: _exportFolder.isNotEmpty ? _exportFolder : null,
+    );
+    if (result != null && mounted) {
+      setState(() => _exportFolder = result);
+      await _store.save(DataExportConfig(exportFolder: result));
+      return result;
+    }
+    return null;
+  }
+
+  // ── 导入 ───────────────────────────────────────────────────────────────
+
+  Future<void> _pickImportFile() async {
+    final l10n = AppLocalizations.of(context);
+    FilePickerResult? result;
+    try {
+      result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const <String>['json'],
+      );
+    } on Object catch (e) {
+      // 原生选择器失败（如鸿蒙插件异常）不应冒泡为未捕获异常。
+      AppLog.instance.w('[备份导入] 选择文件失败: $e');
+      if (!mounted) return;
+      _snack(l10n.importDataFailed);
+      return;
+    }
+    if (result == null || !mounted) return;
+
+    final filePath = result.files.single.path;
+    if (filePath == null) {
+      _snack(l10n.importDataInvalidFormat);
+      return;
+    }
+
+    _snack(l10n.importDataParsing);
+    try {
+      final text = await File(filePath).readAsString();
+      final bundle = decodeBackupBundle(text);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      if (bundle == null || !isValidBackupBundle(bundle)) {
+        _snack(l10n.importDataInvalidFormat);
+        return;
+      }
+      await _showImportPreview(bundle);
+    } on Object {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      _snack(l10n.importDataFailed);
+    }
+  }
+
+  Future<void> _showImportPreview(Map<String, dynamic> bundle) async {
+    final l10n = AppLocalizations.of(context);
+    final count = countBundleEntries(bundle);
+    var merge = true; // 默认合并（更安全）
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setInner) => AppAlertDialog(
+          title: Text(l10n.backupPreviewTitle(count)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Text(l10n.backupImportMode),
+              const SizedBox(height: AppTokens.spaceSm),
+              SegmentedButton<bool>(
+                segments: <ButtonSegment<bool>>[
+                  ButtonSegment<bool>(
+                    value: true,
+                    label: Text(l10n.backupMerge),
+                  ),
+                  ButtonSegment<bool>(
+                    value: false,
+                    label: Text(l10n.backupReplace),
+                  ),
+                ],
+                selected: <bool>{merge},
+                onSelectionChanged: (sel) => setInner(() => merge = sel.first),
+              ),
+              const SizedBox(height: AppTokens.spaceXs),
+              Text(
+                merge ? l10n.backupMergeDesc : l10n.backupReplaceDesc,
+                style: Theme.of(ctx).textTheme.bodySmall,
+              ),
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(MaterialLocalizations.of(ctx).cancelButtonLabel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(l10n.confirmImport),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+    try {
+      await applyBackupBundle(bundle, merge: merge);
+      if (!mounted) return;
+      _snack(l10n.importDataSuccess);
+    } on Object {
+      if (!mounted) return;
+      _snack(l10n.importDataFailed);
+    }
+  }
+
+  // ── 导出 ───────────────────────────────────────────────────────────────
+
+  Future<void> _showExportSheet() async {
+    final l10n = AppLocalizations.of(context);
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppTokens.radiusXl),
+        ),
+      ),
+      builder: (_) => StatefulBuilder(
+        builder: (_, setSheetState) => DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          maxChildSize: 0.9,
+          minChildSize: 0.5,
+          expand: false,
+          builder: (sheetCtx, _) => Padding(
+            padding: EdgeInsets.only(
+              left: AppTokens.spaceLg,
+              right: AppTokens.spaceLg,
+              top: AppTokens.spaceMd,
+              // 键盘弹起时贴键盘，收起时避让系统手势条。
+              bottom: math.max(
+                    MediaQuery.of(sheetCtx).viewInsets.bottom,
+                    MediaQuery.of(sheetCtx).padding.bottom,
+                  ) +
+                  AppTokens.spaceLg,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Center(
+                  child: Container(
+                    margin: const EdgeInsets.only(top: AppTokens.spaceMd),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Theme.of(sheetCtx)
+                          .colorScheme
+                          .onSurfaceVariant
+                          .withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(AppTokens.radiusFull),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppTokens.spaceMd),
+                BackupCategorySelector(
+                  selected: _selected,
+                  // 弹层在独立路由中：必须用 StatefulBuilder 的 setState
+                  // 重建弹层，页面级 setState 不会刷新这里的勾选状态。
+                  onChanged: (next) => setSheetState(() => _selected = next),
+                ),
+                const SizedBox(height: AppTokens.spaceMd),
+                FilledButton.icon(
+                  onPressed: _selected.isEmpty
+                      ? null
+                      : () {
+                          Navigator.pop(sheetCtx);
+                          _showFolderThenExport();
+                        },
+                  icon: const Icon(Icons.file_upload_rounded),
+                  label: Text(l10n.exportData),
+                ),
+                if (_selected.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: AppTokens.spaceSm),
+                    child: Text(
+                      l10n.backupScopeNone,
+                      style: Theme.of(sheetCtx).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(sheetCtx).colorScheme.error,
+                          ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showFolderThenExport() async {
+    final l10n = AppLocalizations.of(context);
+    String? folder = _exportFolder.isNotEmpty ? _exportFolder : null;
+    // 鸿蒙：目录选择接口不可用（已知缺陷 U2），改走系统「另存为」对话框
+    // （原生 wxyy/file_export 通道），由用户选择保存位置。
+    if (PlatformService.instance.isOHOS) {
+      await _doExport(null);
+      return;
+    }
+    if (folder == null) {
+      // 未设置自定义目录：询问默认 or 自定义
+      final choice = await showModalBottomSheet<String>(
+        context: context,
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppTokens.radiusXl),
+          ),
+        ),
+        builder: (ctx) => ConstrainedBox(
+          constraints:
+              BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.85),
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(AppTokens.spaceLg),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  ListTile(
+                    leading: const Icon(Icons.folder_special_rounded),
+                    title: Text(l10n.exportFolderDefault),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => Navigator.pop(ctx, 'default'),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.save_rounded),
+                    title: Text(l10n.exportFolderCustom),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => Navigator.pop(ctx, 'custom'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      if (choice == 'default') {
+        final dir = await getApplicationDocumentsDirectory();
+        final exportDir = Directory('${dir.path}/万象影院/Exports');
+        if (!exportDir.existsSync()) exportDir.createSync(recursive: true);
+        folder = exportDir.path;
+      } else if (choice == 'custom') {
+        folder = await _pickExportFolder();
+      }
+    } else {
+      // 已设置自定义目录：直接询问是否改用默认
+      final choice = await showModalBottomSheet<String>(
+        context: context,
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppTokens.radiusXl),
+          ),
+        ),
+        builder: (ctx) => ConstrainedBox(
+          constraints:
+              BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.85),
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(AppTokens.spaceLg),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  ListTile(
+                    leading: const Icon(Icons.folder_special_rounded),
+                    title: Text(l10n.exportFolderDefault),
+                    subtitle:
+                        _exportFolder.isNotEmpty ? Text(_exportFolder) : null,
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => Navigator.pop(ctx, 'default'),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.save_rounded),
+                    title: Text(l10n.exportFolderCustom),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => Navigator.pop(ctx, 'custom'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      if (choice == 'default') {
+        final dir = await getApplicationDocumentsDirectory();
+        final exportDir = Directory('${dir.path}/万象影院/Exports');
+        if (!exportDir.existsSync()) exportDir.createSync(recursive: true);
+        folder = exportDir.path;
+      } else if (choice == 'custom') {
+        folder = await _pickExportFolder();
+      }
+    }
+    if (folder == null || !mounted) return;
+    await _doExport(folder);
+  }
+
+  Future<void> _doExport(String? folder) async {
+    final l10n = AppLocalizations.of(context);
+    if (_selected.isEmpty) {
+      _snack(l10n.backupScopeNone);
+      return;
+    }
+    _snack(l10n.exportDataInProgress);
+    try {
+      final bundle = await buildBackupBundle(categories: _selected);
+      final count = countBundleEntries(bundle);
+      final stamp = DateTime.now()
+          .toIso8601String()
+          .replaceAll(':', '-')
+          .replaceAll('.', '-');
+      final fileName = 'wxyy_backup_$stamp.json';
+      final json = encodeBackupBundle(bundle);
+      if (PlatformService.instance.isOHOS) {
+        final String? saved = await FileExporter.saveTextFile(
+          fileName: fileName,
+          content: json,
+        );
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        // 用户取消另存为：不提示成功/失败。
+        if (saved == null) return;
+      } else {
+        await File('${folder!}/$fileName').writeAsString(json);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      }
+      _snack(l10n.backupExported(count));
+    } on Object catch (e) {
+      AppLog.instance.w('[备份导出] 保存失败: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      _snack(l10n.exportDataFailed);
+    }
+  }
+
+  // ── 站点备份 / 恢复 ────────────────────────────────────────────────
+  // 与上方整机备份（backup_archive）并列的独立功能：只备份站点注册表
+  // （规则全文、py 源码内嵌、jar 引用重链），格式互不兼容。现有导入/导出
+  // 行为不动。海阔小程序规则走独立存储，不包含在站点备份内。
+
+  Future<void> _exportSiteBackup() async {
+    final repo = context.read<SourceRepository>();
+    _snack('正在导出站点备份…');
+    try {
+      final result = await SiteBackupService().exportBackup(repo);
+      final stamp = DateTime.now()
+          .toIso8601String()
+          .replaceAll(':', '-')
+          .replaceAll('.', '-');
+      final fileName = 'wxyy_sites_backup_$stamp.json';
+      String? savedPath;
+      if (PlatformService.instance.isOHOS) {
+        // 鸿蒙走系统「另存为」对话框（与上方整机导出同一路）。
+        savedPath = await FileExporter.saveTextFile(
+          fileName: fileName,
+          content: result.jsonText,
+        );
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        // 用户取消另存为：不提示成功/失败。
+        if (savedPath == null) return;
+      } else {
+        var folder = _exportFolder;
+        if (folder.isEmpty) {
+          final dir = await getApplicationDocumentsDirectory();
+          final exportDir = Directory('${dir.path}/万象影院/Exports');
+          if (!exportDir.existsSync()) exportDir.createSync(recursive: true);
+          folder = exportDir.path;
+        }
+        final file = File('$folder/$fileName');
+        await file.writeAsString(result.jsonText);
+        savedPath = file.path;
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      }
+      final problems = <SiteBackupIssue>[
+        ...result.pyFailures,
+        ...result.jarUnverified,
+      ];
+      await _showSiteBackupReport(
+        title: '站点备份已导出',
+        lines: <String>[
+          '共 ${result.total} 个站点，已内嵌 ${result.pyEmbedded} 份 py 源码。',
+          if (savedPath != null) '保存位置：$savedPath',
+          if (problems.isEmpty) '全部站点内容齐全，无缺失项。',
+          if (problems.isNotEmpty)
+            '有 ${problems.length} 个站点内容不全（见明细），条目已保留在备份内。',
+        ],
+        issues: problems,
+      );
+    } on Object catch (e) {
+      AppLog.instance.w('[站点备份] 导出失败: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      _snack('站点备份导出失败');
+    }
+  }
+
+  Future<void> _importSiteBackup() async {
+    FilePickerResult? result;
+    try {
+      result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const <String>['json'],
+      );
+    } on Object catch (e) {
+      AppLog.instance.w('[站点备份] 选择文件失败: $e');
+      if (!mounted) return;
+      _snack('选择文件失败');
+      return;
+    }
+    if (result == null || !mounted) return;
+    final filePath = result.files.single.path;
+    if (filePath == null) {
+      _snack('文件路径无效');
+      return;
+    }
+    _snack('正在恢复站点备份…');
+    try {
+      final text = await File(filePath).readAsString();
+      final repo = context.read<SourceRepository>();
+      final outcome = await SiteBackupService().restoreBackup(repo, text);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      if (outcome.fileError != null) {
+        await _showSiteBackupReport(
+          title: '站点备份恢复失败',
+          lines: <String>[outcome.fileError!, '未注册任何站点。'],
+          issues: const <SiteBackupIssue>[],
+        );
+        return;
+      }
+      await _showSiteBackupReport(
+        title: '站点备份恢复完成',
+        lines: <String>[
+          '新增 ${outcome.added} 个，'
+              '已存在跳过 ${outcome.skippedExisting} 个，'
+              '内容不同未覆盖 ${outcome.skippedDifferent} 个，'
+              '失败 ${outcome.failed} 个。',
+          if (outcome.issues.isEmpty) '无须留意的明细。',
+        ],
+        issues: outcome.issues,
+      );
+    } on Object catch (e) {
+      AppLog.instance.w('[站点备份] 恢复失败: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      _snack('站点备份恢复失败');
+    }
+  }
+
+  /// 站点备份导出 / 恢复的汇总报告：条数 + 逐站原因清单，如实展示。
+  Future<void> _showSiteBackupReport({
+    required String title,
+    required List<String> lines,
+    required List<SiteBackupIssue> issues,
+  }) async {
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AppAlertDialog(
+        title: Text(title),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              for (final line in lines) ...<Widget>[
+                Text(line),
+                const SizedBox(height: AppTokens.spaceXs),
+              ],
+              if (issues.isNotEmpty) ...<Widget>[
+                const Divider(),
+                Text(
+                  '逐站明细（${issues.length} 条）',
+                  style: Theme.of(ctx).textTheme.titleSmall,
+                ),
+                const SizedBox(height: AppTokens.spaceXs),
+                SizedBox(
+                  height: 280,
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: issues.length,
+                    itemBuilder: (_, i) {
+                      final issue = issues[i];
+                      final name = issue.siteName.isNotEmpty
+                          ? issue.siteName
+                          : issue.siteId;
+                      return Padding(
+                        padding: const EdgeInsets.only(
+                          bottom: AppTokens.spaceXs,
+                        ),
+                        child: Text(
+                          '$name：${issue.reason}',
+                          style: Theme.of(ctx).textTheme.bodySmall,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: <Widget>[
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('知道了'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _snack(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
+    return Scaffold(
+      appBar: AppBar(title: Text(l10n.dataImportExportTitle)),
+      body: ListView(
+        padding: context.pageInset(AppTokens.spaceLg),
+        children: <Widget>[
+          SettingsGroup(
+            header: l10n.importData,
+            children: <Widget>[
+              SettingsTile(
+                icon: Icons.file_open_rounded,
+                title: l10n.importData,
+                subtitle: l10n.importDataDesc,
+                onTap: () => _pickImportFile(),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppTokens.spaceLg),
+          SettingsGroup(
+            header: l10n.exportData,
+            children: <Widget>[
+              SettingsTile(
+                icon: Icons.download_rounded,
+                title: l10n.exportData,
+                subtitle: l10n.exportDataDesc,
+                onTap: () => _showExportSheet(),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppTokens.spaceLg),
+          SettingsGroup(
+            header: '站点备份 / 恢复',
+            children: <Widget>[
+              SettingsTile(
+                icon: Icons.backup_rounded,
+                title: '导出站点备份',
+                subtitle: '备份全部站点：规则全文、py 源码内嵌、jar 引用重链',
+                onTap: () => _exportSiteBackup(),
+              ),
+              SettingsTile(
+                icon: Icons.restore_rounded,
+                title: '恢复站点备份',
+                subtitle: '按站点 id 合并去重，绝不覆盖已有不同站点',
+                onTap: () => _importSiteBackup(),
+              ),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppTokens.spaceLg,
+              AppTokens.spaceSm,
+              AppTokens.spaceLg,
+              0,
+            ),
+            child: Text(
+              '说明：海阔小程序规则走单独的存储，不包含在站点备份内。',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+          ),
+          const SizedBox(height: AppTokens.spaceLg),
+          Padding(
+            padding: const EdgeInsets.all(AppTokens.spaceMd),
+            child: Container(
+              padding: const EdgeInsets.all(AppTokens.spaceMd),
+              decoration: BoxDecoration(
+                color: AppTheme.cardContainer(Theme.of(context).colorScheme),
+                borderRadius: BorderRadius.circular(AppTokens.radiusLg),
+              ),
+              child: Row(
+                children: <Widget>[
+                  Icon(
+                    Icons.info_rounded,
+                    size: 18,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: AppTokens.spaceSm),
+                  Expanded(
+                    child: Text(
+                      l10n.selectExportFolder,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Reusable group header for import/export sections.
+// ─────────────────────────────────────────────────────────────────────────────

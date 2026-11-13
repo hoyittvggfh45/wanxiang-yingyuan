@@ -1,0 +1,20 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "模块描述"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "description"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "万象影院"
+    },
+    {
+      "name": "keep_background_running_reason",
+      "value": "下载在后台继续"
+    }
+  ]
+}

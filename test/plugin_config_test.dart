@@ -1,0 +1,403 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:wxyy/core/models/plugin_config.dart';
+
+PluginConfig build(Map<String, dynamic> json) => PluginConfig.fromJson(json);
+
+void main() {
+  group('PluginConfig', () {
+    test('parses animeSource MacCMS config', () {
+      final source = build(<String, dynamic>{
+        'id': 'pms_example',
+        'name': '示例影视源',
+        'type': 'animeSource',
+        'responseType': 'json',
+        'site': {
+          'domain': 'https://example.com',
+          'baseUrl': 'https://example.com',
+        },
+        'parser': {'type': 'builtin'},
+        'routes': {
+          'latest': {'url': '/api.php/provide/vod/?ac=list&pg={page}'},
+          'search': {'url': '/api.php/provide/vod/?ac=list&wd={keyword}'},
+        },
+      });
+      expect(source.id, 'pms_example');
+      expect(source.type, SourceType.animeSource);
+      expect(source.validate(), isEmpty);
+    });
+
+    test('detects source type for mangaSource / novelSource', () {
+      expect(
+        build(<String, dynamic>{
+          'id': 'm', 'name': 'm', 'type': 'mangaSource',
+          'site': {'baseUrl': 'https://x.com'}, 'parser': {'type': 'builtin'},
+        }).type,
+        SourceType.mangaSource,
+      );
+      expect(
+        build(<String, dynamic>{
+          'id': 'n', 'name': 'n', 'type': 'novelSource',
+          'site': {'baseUrl': 'https://x.com'}, 'parser': {'type': 'builtin'},
+        }).type,
+        SourceType.novelSource,
+      );
+    });
+
+    test('validate flags missing id and baseUrl', () {
+      final source = build(<String, dynamic>{
+        'name': 'bad',
+        'type': 'animeSource',
+        'site': {'baseUrl': ''},
+        'parser': {'type': 'builtin'},
+      });
+      final errors = source.validate();
+      expect(errors, contains('missing: id'));
+      expect(errors, contains('missing: site.baseUrl'));
+    });
+
+    test('resolveRouteUrl fills baseUrl and vars', () {
+      final source = build(<String, dynamic>{
+        'id': 'pms_example',
+        'name': '示例',
+        'type': 'animeSource',
+        'site': {'baseUrl': 'https://example.com'},
+        'parser': {'type': 'builtin'},
+        'routes': {
+          'search': {'url': '/api.php/provide/vod/?ac=list&wd={keyword}&pg={page}'},
+        },
+      });
+      final url = source.resolveRouteUrl(
+        'search',
+        activeBaseUrl: 'https://example.com',
+        vars: <String, String>{'keyword': 'naruto', 'page': '2'},
+      );
+      expect(
+        url,
+        'https://example.com/api.php/provide/vod/?ac=list&wd=naruto&pg=2',
+      );
+    });
+
+    test('resolveRouteUrl supports {page-1} / {page+1} offsets', () {
+      final source = build(<String, dynamic>{
+        'id': 'pms_zero',
+        'name': '示例',
+        'type': 'mangaSource',
+        'site': {'baseUrl': 'https://example.com'},
+        'parser': {'type': 'builtin'},
+        'routes': {
+          // 0 基分页站点：第 1 页对应 page=0
+          'explore': {'url': '/?f_cats=1019&page={page-1}'},
+          'search': {'url': '/s?q={keyword}&page={page+1}'},
+        },
+      });
+      expect(
+        source.resolveRouteUrl(
+          'explore',
+          activeBaseUrl: 'https://example.com',
+          vars: <String, String>{'page': '1'},
+        ),
+        'https://example.com/?f_cats=1019&page=0',
+      );
+      expect(
+        source.resolveRouteUrl(
+          'explore',
+          activeBaseUrl: 'https://example.com',
+          vars: <String, String>{'page': '3'},
+        ),
+        'https://example.com/?f_cats=1019&page=2',
+      );
+      expect(
+        source.resolveRouteUrl(
+          'search',
+          activeBaseUrl: 'https://example.com',
+          vars: <String, String>{'keyword': 'abc', 'page': '2'},
+        ),
+        'https://example.com/s?q=abc&page=3',
+      );
+      // 偏移后为负 → 夹到 0（不应出现 page=-1）
+      expect(
+        source.resolveRouteUrl(
+          'explore',
+          activeBaseUrl: 'https://example.com',
+          vars: <String, String>{'page': '0'},
+        ),
+        'https://example.com/?f_cats=1019&page=0',
+      );
+      // 非数值变量（关键词）：偏移不生效，占位符保留后由 cleanup 清掉
+      expect(
+        source.resolveRouteUrl(
+          'search',
+          activeBaseUrl: 'https://example.com',
+          vars: <String, String>{'keyword': 'x'},
+        ),
+        'https://example.com/s?q=x&page=',
+      );
+    });
+
+    test('responseTypeFor falls back to top-level', () {
+      final source = build(<String, dynamic>{
+        'id': 'p', 'name': 'p', 'type': 'animeSource',
+        'responseType': 'json',
+        'site': {'baseUrl': 'https://x.com'},
+        'parser': {'type': 'builtin'},
+        'routes': {'latest': {'url': '/l'}},
+      });
+      expect(source.responseTypeFor('latest'), 'json');
+    });
+
+    test('resolveRouteUrl expands tags[]={tags} into repeated array params',
+        () {
+      final source = build(<String, dynamic>{
+        'id': 'pms_arr',
+        'name': '示例',
+        'type': 'animeSource',
+        'site': {'baseUrl': 'https://example.com'},
+        'parser': {'type': 'builtin'},
+        'routes': {
+          'search': {'url': '/search?query={keyword}&tags[]={tags}&page={page}'},
+        },
+      });
+      // 多选值以逗号连接 → 展开为 tags[]=v1&tags[]=v2，逐值 encodeComponent
+      // （中日文/空格/[] 均编码），站点按数组语义取到两个独立 tag。
+      expect(
+        source.resolveRouteUrl(
+          'search',
+          activeBaseUrl: 'https://example.com',
+          vars: <String, String>{
+            'keyword': '',
+            'tags': '中文字幕,斷面圖',
+            'page': '1',
+          },
+        ),
+        'https://example.com/search?query=&tags[]=%E4%B8%AD%E6%96%87%E5%AD%97%E5%B9%95&tags[]=%E6%96%B7%E9%9D%A2%E5%9C%96&page=1',
+      );
+      // 单值：与多值同构，仍走数组形态。
+      expect(
+        source.resolveRouteUrl(
+          'search',
+          activeBaseUrl: 'https://example.com',
+          vars: <String, String>{
+            'keyword': '',
+            'tags': 'ASMR',
+            'page': '1',
+          },
+        ),
+        'https://example.com/search?query=&tags[]=ASMR&page=1',
+      );
+      // 空多选：整段参数移除，不残留 tags[]= 空参数/悬空 &。
+      expect(
+        source.resolveRouteUrl(
+          'search',
+          activeBaseUrl: 'https://example.com',
+          vars: <String, String>{'keyword': 'abc', 'page': '2'},
+        ),
+        'https://example.com/search?query=abc&page=2',
+      );
+      // 空多选且 tags 恰为 query 首参：移除后 ?& → ? 清理悬空连接符。
+      final firstParam = build(<String, dynamic>{
+        'id': 'pms_arr2',
+        'name': '示例',
+        'type': 'animeSource',
+        'site': {'baseUrl': 'https://example.com'},
+        'parser': {'type': 'builtin'},
+        'routes': {
+          'search': {'url': '/search?tags[]={tags}&q={keyword}'},
+        },
+      });
+      expect(
+        firstParam.resolveRouteUrl(
+          'search',
+          activeBaseUrl: 'https://example.com',
+          vars: <String, String>{'keyword': 'x'},
+        ),
+        'https://example.com/search?q=x',
+      );
+    });
+  });
+
+  group('CommentsConfig', () {
+    Map<String, dynamic> baseJson({Map<String, dynamic>? comments}) =>
+        <String, dynamic>{
+          'id': 'pms_example',
+          'name': 'example',
+          'type': 'animeSource',
+          'site': {'baseUrl': 'https://example.com'},
+          'parser': {'type': 'builtin'},
+          'routes': {
+            'latest': {'url': '/latest?page={page}'},
+          },
+          if (comments != null) 'comments': comments,
+        };
+
+    test('missing comments section yields null (backward compat)', () {
+      final source = build(baseJson());
+      expect(source.comments, isNull);
+      expect(source.validate(), isEmpty);
+    });
+
+    test('parses full comments section', () {
+      final source = build(baseJson(comments: <String, dynamic>{
+        'routes': {
+          'list': {'url': '/api/comments?id={id}&page={page}'},
+          'replies': {'url': '/api/comments/{commentId}/replies?page={page}'},
+          'post': {
+            'url': '/api/comments',
+            'method': 'POST',
+            'params': {'id': '{id}', 'content': '{text}'},
+          },
+          'like': {'url': '/api/comments/{commentId}/like', 'method': 'POST'},
+          'report': {
+            'url': '/api/comments/{commentId}/report',
+            'method': 'POST',
+          },
+        },
+        'selectors': {
+          'items': r'$.data.list',
+          'commentId': r'$.id',
+          'author': r'$.user.name',
+          'content': r'$.content',
+          'success': r'$.code',
+        },
+        'login': {
+          'url': 'https://example.com/login',
+          'checkCookie': 'user_token',
+          'checkUrl': '/api/user/me',
+          'loggedInSelector': r'$.data.username',
+        },
+      }));
+      final comments = source.comments!;
+      expect(comments.provider, 'source');
+      expect(comments.hasList, isTrue);
+      expect(comments.hasRoute('post'), isTrue);
+      expect(comments.hasRoute('reply'), isFalse);
+      expect(comments.routes['post']!.method, 'POST');
+      expect(comments.routes['post']!.params, containsPair('content', '{text}'));
+      expect(comments.selectors!['items'], r'$.data.list');
+      expect(comments.supportsLogin, isTrue);
+      expect(comments.login!.checkCookie, 'user_token');
+      expect(comments.login!.loggedInSelector, r'$.data.username');
+    });
+
+    test('list-only comments: other actions absent, no login', () {
+      final source = build(baseJson(comments: <String, dynamic>{
+        'routes': {
+          'list': {'url': '/comments/{id}'},
+        },
+      }));
+      final comments = source.comments!;
+      expect(comments.hasList, isTrue);
+      expect(comments.hasRoute('post'), isFalse);
+      expect(comments.hasRoute('like'), isFalse);
+      expect(comments.hasRoute('report'), isFalse);
+      expect(comments.login, isNull);
+      expect(comments.supportsLogin, isFalse);
+    });
+
+    test('provider field reserved for bangumi (parse only)', () {
+      final source = build(baseJson(comments: <String, dynamic>{
+        'provider': 'bangumi',
+        'routes': {
+          'list': {'url': '/comments/{id}'},
+        },
+      }));
+      expect(source.comments!.provider, 'bangumi');
+    });
+
+    test('resolveRouteUrl resolves comments.* routes with placeholders', () {
+      final source = build(baseJson(comments: <String, dynamic>{
+        'routes': {
+          'list': {'url': '/api/comments?id={id}&page={page}'},
+          'replies': {'url': '/api/comments/{commentId}/replies?page={page}'},
+          'post': {'url': '/api/comments?id={id}&content={text}'},
+        },
+      }));
+      expect(
+        source.resolveRouteUrl(
+          'comments.list',
+          activeBaseUrl: 'https://example.com',
+          vars: <String, String>{'id': '42', 'page': '3'},
+        ),
+        'https://example.com/api/comments?id=42&page=3',
+      );
+      expect(
+        source.resolveRouteUrl(
+          'comments.replies',
+          activeBaseUrl: 'https://example.com',
+          vars: <String, String>{'commentId': 'c9', 'page': '1'},
+        ),
+        'https://example.com/api/comments/c9/replies?page=1',
+      );
+      // 非 ASCII 自由文本占位符需 URL 编码
+      expect(
+        source.resolveRouteUrl(
+          'comments.post',
+          activeBaseUrl: 'https://example.com',
+          vars: <String, String>{'id': '42', 'text': '好看'},
+        ),
+        'https://example.com/api/comments?id=42&content=${Uri.encodeComponent('好看')}',
+      );
+    });
+
+    test('resolveRouteUrl comments route follows mirror base', () {
+      final source = build(baseJson(comments: <String, dynamic>{
+        'routes': {
+          'list': {'url': 'https://example.com/api/comments?id={id}'},
+        },
+      }));
+      expect(
+        source.resolveRouteUrl(
+          'comments.list',
+          activeBaseUrl: 'https://mirror.example.org',
+          vars: <String, String>{'id': '1'},
+        ),
+        'https://mirror.example.org/api/comments?id=1',
+      );
+    });
+
+    test('resolveRouteUrl throws for undeclared comments route', () {
+      final source = build(baseJson(comments: <String, dynamic>{
+        'routes': {
+          'list': {'url': '/comments/{id}'},
+        },
+      }));
+      expect(
+        () => source.resolveRouteUrl(
+          'comments.post',
+          activeBaseUrl: 'https://example.com',
+        ),
+        throwsA(isA<PluginConfigException>()),
+      );
+    });
+
+    test('responseTypeFor resolves comments route level then top level', () {
+      final source = build(<String, dynamic>{
+        'id': 'p', 'name': 'p', 'type': 'animeSource',
+        'responseType': 'json',
+        'site': {'baseUrl': 'https://x.com'},
+        'parser': {'type': 'builtin'},
+        'routes': {'latest': {'url': '/l'}},
+        'comments': {
+          'routes': {
+            'list': {'url': '/c', 'responseType': 'html'},
+            'post': {'url': '/p', 'method': 'POST'},
+          },
+        },
+      });
+      expect(source.responseTypeFor('comments.list'), 'html');
+      expect(source.responseTypeFor('comments.post'), 'json');
+    });
+
+    test('toJson round-trips comments section', () {
+      final source = build(baseJson(comments: <String, dynamic>{
+        'routes': {
+          'list': {'url': '/comments/{id}'},
+        },
+        'login': {'checkCookie': 'token'},
+      }));
+      final reparsed = PluginConfig.fromJson(source.toJson());
+      expect(reparsed.comments, isNotNull);
+      expect(reparsed.comments!.hasList, isTrue);
+      expect(reparsed.comments!.login!.checkCookie, 'token');
+    });
+  });
+}

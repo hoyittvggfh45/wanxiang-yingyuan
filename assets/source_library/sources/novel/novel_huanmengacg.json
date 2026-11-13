@@ -1,0 +1,185 @@
+{
+    "header": "{\"Referer\":\"https://www.huanmengacg.com/\",\"User-Agent\":\"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36\"}",
+    "enabled": true,
+    "bookSourceName": "幻梦ACG轻小说",
+    "ageRating": "general",
+    "bookSourceUrl": "https://www.huanmengacg.com",
+    "bookSourceType": 0,
+    "bookSourceGroup": "内置书源",
+    "bookSourceComment": "幻梦ACG（PTCMS 轻小说站）。正文 <p style=order:N> 乱序反爬，由引擎按 order 升序还原；章节列表取隐藏原始 ul(#all-chapters-raw)，升序无需反转。发现页书列表结构：<dl><dt><a><img data-original></a></dt><dd>...</dd></dl>；封面取 dt img 的 data-original（绝对地址）。筛选为链接式，URL 形如 /index.php/book/category/list/{文库id}/tags/{题材id}/finish/{进度}/size/{字数}/order/{排序}。",
+    "searchUrl": "https://www.huanmengacg.com/index.php/book/search?action=search&key={{key}}",
+    "exploreUrl": "全部小说::https://www.huanmengacg.com/index.php/book/category/\n校园::https://www.huanmengacg.com/index.php/book/category/tags/1\n青春::https://www.huanmengacg.com/index.php/book/category/tags/2\n恋爱::https://www.huanmengacg.com/index.php/book/category/tags/3\n治愈::https://www.huanmengacg.com/index.php/book/category/tags/4\n群像::https://www.huanmengacg.com/index.php/book/category/tags/5\n竞技::https://www.huanmengacg.com/index.php/book/category/tags/6\n音乐::https://www.huanmengacg.com/index.php/book/category/tags/7\n美食::https://www.huanmengacg.com/index.php/book/category/tags/8\n旅行::https://www.huanmengacg.com/index.php/book/category/tags/9\n欢乐向::https://www.huanmengacg.com/index.php/book/category/tags/10\n经营::https://www.huanmengacg.com/index.php/book/category/tags/11\n职场::https://www.huanmengacg.com/index.php/book/category/tags/12\n完本小说::https://www.huanmengacg.com/index.php/book/category/finish/2\n排行榜::https://www.huanmengacg.com/index.php/custom/top",
+    "homeSections": [
+        {"id": "hot", "title": "热门书籍", "route": "explore", "params": {"category": "https://www.huanmengacg.com/index.php/book/category/"}, "style": "grid", "limit": 6},
+        {"id": "weekly", "title": "本周好书", "route": "explore", "params": {"category": "https://www.huanmengacg.com/index.php/book/category/order/addtime"}, "style": "grid", "limit": 6},
+        {"id": "recommend", "title": "精品推荐", "route": "explore", "params": {"category": "https://www.huanmengacg.com/index.php/book/category/order/shits"}, "style": "grid", "limit": 6},
+        {"id": "school", "title": "校园榜", "route": "explore", "params": {"category": "https://www.huanmengacg.com/index.php/book/category/tags/1"}, "style": "grid", "limit": 6},
+        {"id": "youth", "title": "青春榜", "route": "explore", "params": {"category": "https://www.huanmengacg.com/index.php/book/category/tags/2"}, "style": "grid", "limit": 6},
+        {"id": "love", "title": "恋爱榜", "route": "explore", "params": {"category": "https://www.huanmengacg.com/index.php/book/category/tags/3"}, "style": "grid", "limit": 6},
+        {"id": "heal", "title": "治愈榜", "route": "explore", "params": {"category": "https://www.huanmengacg.com/index.php/book/category/tags/4"}, "style": "grid", "limit": 6},
+        {"id": "latest", "title": "最近更新", "route": "explore", "params": {"category": "https://www.huanmengacg.com/index.php/book/category/order/addtime"}, "style": "list", "limit": 10},
+        {"id": "completed", "title": "完结大作", "route": "explore", "params": {"category": "https://www.huanmengacg.com/index.php/book/category/finish/2"}, "style": "grid", "limit": 6}
+    ],
+    "ruleSearch": {
+        "bookList": "dl",
+        "bookName": ".bigpic-book-name@text",
+        "bookUrl": ".bigpic-book-name@href",
+        "bookCoverUrl": "dt img@data-original||dt img@src||.book-cover img@data-original||.book-cover img@src||dt img@data-src||dt img@original",
+        "bookAuthor": "tag.p.0@text",
+        "bookKind": ".red-lx@text"
+    },
+    "ruleExplore": {
+        "bookList": "dl",
+        "bookName": ".bigpic-book-name@text",
+        "bookUrl": ".bigpic-book-name@href",
+        "bookCoverUrl": "dt img@data-original||dt img@src||.book-cover img@data-original||.book-cover img@src||dt img@data-src||dt img@original",
+        "bookAuthor": "tag.p.0@text",
+        "bookKind": ".red-lx@text"
+    },
+    "ruleBookInfo": {
+        "name": "h1.name@text||meta[property=\"og:novel:book_name\"]@content||meta[property=\"og:title\"]@content",
+        "author": "meta[property=\"og:novel:author\"]@content||.zx-zuozhe@text||.zx-zhangjie.zx-zuozhe@text",
+        "coverUrl": ".pic-img img@src||img[alt*=封面]@src||meta[property=\"og:image\"]@content||.book-cover img@src",
+        "intro": ".kan-jianjie@text||.kan-jianjie div@text",
+        "kind": "meta[property=\"og:novel:category\"]@content",
+        "lastChapter": "meta[property=\"og:novel:latest_chapter_name\"]@content||.zx-zuixinzj@text",
+        "updateTime": ".xs-shijian@text",
+        "bookStatus": "meta[property=\"og:novel:status\"]@content",
+        "tocUrl": ""
+    },
+    "ruleToc": {
+        "chapterList": "#all-chapters-raw li a||.zhangjie-quanbu.txt-xs li a",
+        "chapterName": "@text",
+        "chapterUrl": "@href"
+    },
+    "ruleContent": {
+        "content": "#article@html",
+        "nextContentUrl": "a:contains(下一页)@href",
+        "replaceRegex": "<script[\\s\\S]*?</script>|<ins[\\s\\S]*?</ins>|幻梦ACG|本章未完|请点击下一页继续阅读"
+    },
+    "filters": {
+        "route": "explore",
+        "groups": [
+            {
+                "id": "list",
+                "title": "文库",
+                "param": "list",
+                "options": [
+                    {"value": "", "label": "全部文库"},
+                    {"value": "60", "label": "其他文库"},
+                    {"value": "61", "label": "游戏剧本"},
+                    {"value": "59", "label": "少女文库"},
+                    {"value": "58", "label": "讲谈社"},
+                    {"value": "57", "label": "小学馆"},
+                    {"value": "56", "label": "集英社"},
+                    {"value": "55", "label": "一迅社"},
+                    {"value": "54", "label": "HJ文库"},
+                    {"value": "53", "label": "GA文库"},
+                    {"value": "52", "label": "Fami通文库"},
+                    {"value": "51", "label": "MF文库J"},
+                    {"value": "50", "label": "角川文库"},
+                    {"value": "48", "label": "电击文库"},
+                    {"value": "49", "label": "富士见文库"},
+                    {"value": "67", "label": "韩国轻小说"},
+                    {"value": "65", "label": "kakuyomu"},
+                    {"value": "70", "label": "syosetu"}
+                ]
+            },
+            {
+                "id": "tags",
+                "title": "题材",
+                "param": "tags",
+                "options": [
+                    {"value": "", "label": "全部题材"},
+                    {"value": "1", "label": "校园"},
+                    {"value": "2", "label": "青春"},
+                    {"value": "3", "label": "恋爱"},
+                    {"value": "4", "label": "治愈"},
+                    {"value": "5", "label": "群像"},
+                    {"value": "6", "label": "竞技"},
+                    {"value": "7", "label": "音乐"},
+                    {"value": "8", "label": "美食"},
+                    {"value": "9", "label": "旅行"},
+                    {"value": "10", "label": "欢乐向"},
+                    {"value": "11", "label": "经营"},
+                    {"value": "12", "label": "职场"},
+                    {"value": "13", "label": "斗智"},
+                    {"value": "14", "label": "脑洞"},
+                    {"value": "15", "label": "宅文化"},
+                    {"value": "16", "label": "穿越"},
+                    {"value": "17", "label": "奇幻"},
+                    {"value": "18", "label": "魔法"},
+                    {"value": "19", "label": "异能"},
+                    {"value": "20", "label": "战斗"},
+                    {"value": "21", "label": "科幻"},
+                    {"value": "22", "label": "机战"},
+                    {"value": "23", "label": "战争"},
+                    {"value": "24", "label": "冒险"},
+                    {"value": "25", "label": "龙傲天"},
+                    {"value": "26", "label": "悬疑"},
+                    {"value": "27", "label": "犯罪"},
+                    {"value": "28", "label": "复仇"},
+                    {"value": "29", "label": "黑暗"},
+                    {"value": "30", "label": "猎奇"},
+                    {"value": "31", "label": "惊悚"},
+                    {"value": "32", "label": "间谍"},
+                    {"value": "33", "label": "末日"},
+                    {"value": "34", "label": "游戏"},
+                    {"value": "35", "label": "大逃杀"},
+                    {"value": "36", "label": "青梅竹马"},
+                    {"value": "37", "label": "妹妹"},
+                    {"value": "38", "label": "女儿"},
+                    {"value": "39", "label": "JK"},
+                    {"value": "40", "label": "JC"},
+                    {"value": "41", "label": "大小姐"},
+                    {"value": "42", "label": "性转"},
+                    {"value": "43", "label": "伪娘"},
+                    {"value": "44", "label": "人外"},
+                    {"value": "45", "label": "后宫"},
+                    {"value": "46", "label": "百合"},
+                    {"value": "47", "label": "耽美"},
+                    {"value": "48", "label": "NTR"},
+                    {"value": "49", "label": "女性视角"},
+                    {"value": "50", "label": "暂未分类"}
+                ]
+            },
+            {
+                "id": "finish",
+                "title": "进度",
+                "param": "finish",
+                "options": [
+                    {"value": "all", "label": "全部进度"},
+                    {"value": "1", "label": "连载"},
+                    {"value": "2", "label": "完结"}
+                ]
+            },
+            {
+                "id": "size",
+                "title": "字数",
+                "param": "size",
+                "options": [
+                    {"value": "all", "label": "全部字数"},
+                    {"value": "1", "label": "30万字以上"},
+                    {"value": "2", "label": "30-50万字"},
+                    {"value": "3", "label": "50-100万字"},
+                    {"value": "4", "label": "100-200万字"},
+                    {"value": "5", "label": "200万字以上"}
+                ]
+            },
+            {
+                "id": "order",
+                "title": "排序",
+                "param": "order",
+                "options": [
+                    {"value": "all", "label": "最具人气"},
+                    {"value": "addtime", "label": "最新更新"},
+                    {"value": "shits", "label": "最多收藏"}
+                ]
+            }
+        ]
+    },
+    "display": {
+        "descZh": "幻梦ACG轻小说站，题材/文库筛选丰富，含排行榜与分类发现。",
+        "descEn": "HuanmengACG PTCMS light-novel source with rich tag filtering, rankings & categories."
+    }
+}

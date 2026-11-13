@@ -1,0 +1,324 @@
+/// 小说导入页面 —— 专用于小说文件的本地导入。
+///
+/// 支持 .txt / .epub 格式，
+/// 提供单文件选取和目录批量导入两种方式。
+library;
+
+import 'dart:io' show FileSystemException;
+
+import 'package:file_picker/file_picker.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:wxyy/generated/app_localizations.dart';
+import 'package:wxyy/core/local/saf_bridge.dart';
+import 'package:path/path.dart' as p;
+import 'package:provider/provider.dart';
+
+import '../../../core/local/folder_import.dart';
+import '../../../core/local/folder_import_dialog.dart';
+import '../../../core/local/ohos_folder_import_hint.dart';
+import '../../../core/local/import_permission.dart';
+import '../../../core/local/local_content_manager.dart';
+import '../../../core/local/archive_extractor.dart'
+    show extractNovelFilesFromArchive, isNovelArchiveFile;
+import '../../../core/local/portable_book_parser.dart'
+    show isPortableBookFile;
+import '../../../core/local/local_novel_parser.dart';
+import '../../../core/platform/platform_service.dart';
+import '../../../core/theme/app_tokens.dart';
+
+class ImportNovelScreen extends StatefulWidget {
+  const ImportNovelScreen({super.key});
+
+  @override
+  State<ImportNovelScreen> createState() => _ImportNovelScreenState();
+}
+
+class _ImportNovelScreenState extends State<ImportNovelScreen> {
+  bool _picking = false;
+
+  Future<void> _pickFiles() async {
+    final granted = await requestLocalImportPermission();
+    if (!granted) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).storagePermissionDenied)),
+      );
+      return;
+    }
+    setState(() => _picking = true);
+    try {
+      // Android SAF 无法按 txt/epub 之外的扩展名稳定过滤（cbz/mkv 等无标准 MIME
+      // 会被隐藏），统一用 FileType.any 再由 classifyByPath 校验；桌面保留 custom。
+      // 桌面侧扩展名加入压缩包（zip/cbz/7z/rar…），归档内 txt/epub 批量导入。
+      final isAndroid = PlatformService.instance.isAndroid;
+      final result = await FilePicker.platform.pickFiles(
+        allowMultiple: true,
+        type: isAndroid ? FileType.any : FileType.custom,
+        allowedExtensions: isAndroid
+            ? null
+            : const <String>[
+                'txt', 'epub', 'zip', 'cbz', 'rar', '7z', 'cb7',
+                // 便携文档：Mobi 系与 PDF（文本层）。
+                'mobi', 'prc', 'azw', 'pdf',
+              ],
+      );
+      if (result == null || !mounted) return;
+      var importedCount = 0;
+      var archiveCount = 0;
+      for (final f in result.files) {
+        if (f.path == null) {
+          if (!mounted) continue;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(AppLocalizations.of(context).pickFileNoPath)),
+          );
+          continue;
+        }
+        // Android 走 FileType.any，选中文件是 content:// URI，无文件扩展名，
+        // 直接按 path 分类会失败（"无法打开 TXT" 根因）。改按显示名 f.name
+        // （含 .txt/.epub 扩展名）分类，path 作为兜底。
+        final kind = classifyByPath(f.name) ?? classifyByPath(f.path!);
+        // 便携文档（Mobi/PDF 文本层）：按小说入库，打开时由阅读器解析。
+        final bool isPortable = isPortableBookFile(f.path!) ||
+            isPortableBookFile(f.name);
+        // 压缩包批量导入：解压归档内 txt/epub 逐本入库（持久目录，
+        // 文件名解析书名/作者）。非小说归档（无 txt/epub 条目）报错跳过。
+        if (kind != LocalMediaKind.text &&
+            !isPortable &&
+            isNovelArchiveFile(f.path!)) {
+          try {
+            final extracted = await extractNovelFilesFromArchive(f.path!);
+            archiveCount++;
+            for (final path in extracted) {
+              final parsed =
+                  LocalNovelParser.analyzeNameAuthor(p.basename(path));
+              await context.read<LocalContentManager>().add(LocalContentEntry(
+                    id: path,
+                    title: parsed.name,
+                    path: path,
+                    kind: LocalMediaKind.text,
+                    addedAt: DateTime.now().millisecondsSinceEpoch,
+                    author: parsed.author,
+                  ));
+              importedCount++;
+            }
+          } on Object catch (e) {
+            if (!mounted) continue;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                  content:
+                      Text(AppLocalizations.of(context).unrecognizedFile(
+                    '${f.name} ($e)',
+                  ))),
+            );
+          }
+          continue;
+        }
+        if (kind != LocalMediaKind.text && !isPortable) {
+          if (!mounted) continue;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(AppLocalizations.of(context).unrecognizedFile(f.name))),
+          );
+          continue;
+        }
+        // 文件名自动解析书名/作者（「《书名》作者：xx」等常见命名），
+        // 入库标题不再带扩展名与作者尾缀。
+        final parsed = LocalNovelParser.analyzeNameAuthor(f.name);
+        await context.read<LocalContentManager>().add(LocalContentEntry(
+          id: f.path!,
+          title: parsed.name,
+          path: f.path!,
+          kind: LocalMediaKind.text,
+          addedAt: DateTime.now().millisecondsSinceEpoch,
+          author: parsed.author,
+        ));
+        importedCount++;
+      }
+      if (mounted) {
+        final summary = archiveCount > 0
+            ? '$archiveCount ${AppLocalizations.of(context).novelArchiveImported} · $importedCount ${AppLocalizations.of(context).contentImportOpened}'
+            : '$importedCount ${AppLocalizations.of(context).contentImportOpened}';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(summary)),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).importFailed(e.toString()))),
+      );
+    } finally {
+      if (mounted) setState(() => _picking = false);
+    }
+  }
+
+  Future<void> _pickDirectory() async {
+    final granted = await requestLocalImportPermission();
+    if (!granted) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).storagePermissionDenied)),
+      );
+      return;
+    }
+    if (!mounted) return;
+    final dir = await FolderImport.pick(context);
+    if (dir == null || !mounted) return;
+    // 安卓走 saf.pickDirectory 拿 content:// tree URI（getDirectoryPath 在分区存储下
+    // 返回真实路径，dart:io 列不出文件）；桌面/其它平台为真实路径，走 dart:io。
+    final saf = isAndroidSafUri(dir);
+    final folderTitle = saf ? await safFolderName(dir) : p.basename(dir);
+    // 递归扫描目录，识别小说文件（修复「选择目录却导入不了」）。
+    setState(() => _picking = true);
+    try {
+      final files = saf
+          ? await listFolderFilesByKindSaf(dir, LocalMediaKind.text)
+          : listFolderFilesByKind(dir, LocalMediaKind.text);
+      if (files.isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context).emptyFolder)),
+        );
+        return;
+      }
+      // 多个文件：弹勾选列表，在目录里选择要导入的文件，并决定合并为一本书还是逐个分开。
+      List<String> targetFiles = files;
+      if (files.length > 1) {
+        final result = await showFolderFileSelectSheet(
+          context,
+          folderName: folderTitle,
+          files: files,
+          isSaf: saf,
+        );
+        if (!mounted) return;
+        if (result == null || result.selectedFiles.isEmpty) return; // 用户取消
+        if (result.mode == FolderImportMode.merge) {
+          // 合并为一本书：所选文件 = 多章，单个聚合条目（每文件 = 一章）。
+          await context.read<LocalContentManager>().add(LocalContentEntry(
+            id: dir,
+            title: folderTitle,
+            path: dir,
+            kind: LocalMediaKind.text,
+            addedAt: DateTime.now().millisecondsSinceEpoch,
+            filePaths: result.selectedFiles,
+          ));
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(AppLocalizations.of(context)
+                    .novelDirImported(folderTitle, result.selectedFiles.length)),
+              ),
+            );
+          }
+          return;
+        }
+        // 逐个分开：只导入所选文件（下方循环）。
+        targetFiles = result.selectedFiles;
+      }
+      for (final f in targetFiles) {
+        // 与单文件导入一致：文件名自动解析书名/作者。
+        final baseName = safBaseName(f);
+        final parsed = LocalNovelParser.analyzeNameAuthor(baseName);
+        await context.read<LocalContentManager>().add(LocalContentEntry(
+          id: f,
+          title: parsed.name,
+          path: f,
+          kind: LocalMediaKind.text,
+          addedAt: DateTime.now().millisecondsSinceEpoch,
+          author: parsed.author,
+        ));
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${files.length} ${AppLocalizations.of(context).contentImportOpened}')),
+        );
+      }
+    } on FileSystemException catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).folderScanFailed)),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).importFailed(e.toString()))),
+      );
+    } finally {
+      if (mounted) setState(() => _picking = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
+
+    return Scaffold(
+      appBar: AppBar(title: Text(l10n.importNovelTitle)),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppTokens.spaceXl),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              // 上传图标
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: scheme.primaryContainer.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(AppTokens.radiusLg),
+                ),
+                child: Icon(
+                  Icons.upload_file_rounded,
+                  size: 40,
+                  color: scheme.primary,
+                ),
+              ),
+              const SizedBox(height: AppTokens.spaceLg),
+
+              // 格式说明
+              Text(
+                l10n.importNovelFormatsHint,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: scheme.onSurface,
+                    ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppTokens.spaceXl),
+
+              // 选择文件按钮
+              SizedBox(
+                width: 200,
+                child: FilledButton.icon(
+                  onPressed: _picking ? null : _pickFiles,
+                  icon: _picking
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.description_rounded),
+                  label: Text(l10n.importNovelPickFile),
+                ),
+              ),
+              const SizedBox(height: AppTokens.spaceMd),
+
+              // 选择目录按钮（Outlined）。鸿蒙手机目录选择不可用，降级为提示行。
+              if (PlatformService.instance.isOHOSPhone)
+                OhosFolderImportHint(l10n: l10n)
+              else
+                SizedBox(
+                  width: 200,
+                  child: OutlinedButton.icon(
+                    onPressed: _picking ? null : _pickDirectory,
+                    icon: const Icon(Icons.folder_rounded, size: 18),
+                    label: Text(l10n.importNovelPickFolder),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

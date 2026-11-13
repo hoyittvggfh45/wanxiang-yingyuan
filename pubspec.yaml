@@ -1,0 +1,240 @@
+name: wxyy
+description: 四合一媒体聚合客户端（动漫 / 漫画 / 小说 / 影视）—— Material 3 设计系统基础脚手架。
+publish_to: 'none'
+version: 3.5.0+56
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
+  # 莫奈取色（Material You 系统动态色 / 从壁纸提取的和谐调色板）
+  # 2026-09-25 两步解钉：1.8.1 → 1.9.0（AGP 9/Kotlin DSL 兼容，钉死前提失效）
+  # → 2.1.0（material_ui 迁移配套：2.x 的 DynamicColorBuilder 基于 material_ui，
+  # 与 1.x 的类型链不兼容；dynamic_color 2.0.0 起依赖 material_ui 1.0）。
+  dynamic_color: ^2.1.0
+  # 运行时主题状态（亮/暗/跟随 + 自定义主色 + 莫奈开关）
+  provider: ^6.1.2
+  # 自定义主题色选择器
+  flutter_colorpicker: ^1.1.0
+  # HTTP 统一实例（含 CookieManager / stealth 延迟 / 验证感知）
+  dio: ^5.4.3+1
+  # JS 沙箱（ScriptResolver 执行源内嵌脚本，quickjs 内核）
+  flutter_js: ^0.8.1
+  # HTML / CSS 选择器解析
+  # 钉死上界 <0.15.7：html 0.15.7 把 query_selector.dart 的
+  # `matches(Element, String)` 改成了 `matches(Element, SelectorGroup)`，
+  # 而 flutter_html 3.0.0 仍按字符串签名调用，解析到 0.15.7 直接报
+  # "Method not found: 'matches'"，四平台构建全挂。0.15.6 及之前是字符串签名，
+  # 本地 lock 即锁 0.15.6；CI 重新 pub get 会被 ^0.15.4 拉到 0.15.7，故显式封顶。
+  html: ">=0.15.4 <0.15.7"
+  # XPath 引擎（内置源声明式选择器：substring-before/after、following-sibling、text() 等）
+  xpath_selector: ^3.0.2
+  # xpath_selector 的 html 解析适配（基于 package:html）
+  xpath_selector_html_parser: ^3.0.1
+  # RSS 文章正文富文本渲染（保留 HTML 标签 / 图片 / 样式）
+  flutter_html: ^3.0.0
+  # XML 解析（RSS / Atom 订阅源）
+  xml: ^6.5.0
+  # 摘要与编解码（md5 / base64 / rc4 / aes）
+  crypto: ^3.0.3
+  pointycastle: ^3.9.1
+  # 路径工具
+  path: ^1.9.0
+  # 阅读器偏好 / 进度持久化（按 comicId / novelId 存储）
+  shared_preferences: ^2.2.2
+  # CBZ / EPUB 打包（下载管理器，纯 Dart ZIP 实现）
+  archive: ^3.6.1
+  # 多格式漫画归档解压（B 阶段扩展）：纯 Dart，支持 ZIP/CBZ、TAR/CBT、7z/CB7、
+  # RAR/CBR（含 RAR5），无需原生库，桌面+安卓通用。覆盖 .cbr/.rar/.7z 等。
+  koni_archive: ^0.9.0
+  # PDF 漫画解析：把 PDF 每页渲染成图片供漫画阅读器复用（本地文件，Android/iOS/桌面）
+  # 钉死 2.9.2：2.10.0/2.11.0（2026-08-20 同日发布）调用了 vector_math 新版已移除的
+  # Matrix4.translateByDouble / scaleByDouble，与 Flutter 3.47 自带的 vector_math 不兼容，
+  # 构建期直接报 "The method 'translateByDouble' isn't defined"。CI 重新 pub get 会解析到 2.11.0 导致四平台全挂。
+  pdfx: 2.9.2
+  # 下载基路径（平台文档目录）
+  path_provider: ^2.1.3
+  # ECH 本地代理桌面后端：dart:ffi 绑定 Rust C API（echproxy.dll）的字符串桥接
+  ffi: ^2.1.0
+  # 在系统浏览器中打开 URL（验证流程 / 外部链接）
+  url_launcher: ^6.3.0
+  # 应用包信息（关于页读取版本号 / 构建号）
+  package_info_plus: ^8.0.0
+  # 本地/文件选择（导入本地文件、源 JSON 文件）
+  file_picker: ^8.0.0
+  # Android 分区存储：SAF 目录树选择 + 子文档枚举 + content:// 读字节/落盘桥接。
+  # 注意：file_picker.getDirectoryPath 在部分安卓设备/版本返回"真实路径"
+  # （如 /storage/emulated/0/Download/xxx），dart:io 能 exists() 却 list() 不出文件
+  # （静默空扫）。文件夹导入必须用 saf.pickDirectory()（saf_bridge.pickFolderPath）
+  # 拿 content:// tree URI，本包负责列举与读取。
+  saf: ^2.1.0
+  # 运行时权限申请（F2.C：本地导入前申请 READ_MEDIA_* / READ_EXTERNAL_STORAGE）
+  permission_handler: ^11.3.1
+  # Hive 持久化（源/收藏/进度/下载任务/danmaku 缓存）
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  # GBK 解码（源站内容可能为 GBK 编码）
+  fast_gbk: ^1.0.0
+  # WebView（验证流程 / WebView 视频提取 / WebViewResolver）
+  flutter_inappwebview: ^6.0.0
+  # WebView（海阔小程序运行壳，webview_flutter 4.x 专用通道）
+  webview_flutter: ^4.14.1
+  webview_flutter_android: ^4.14.1
+  # 字符集转换（海阔小程序规则解码）
+  enough_convert: ^1.7.1
+  # 视频播放器内核（media_kit / libmpv）
+  media_kit: ^1.2.6
+  media_kit_video: ^2.0.1
+  media_kit_libs_video: ^1.0.7
+  # 系统通知（OS 通知）。注意：Windows 平台 flutter_local_notifications 无官方后端，
+  # 故代码中做平台降级——仅 Android / iOS / Linux / macOS 发 OS 通知，Windows 跳过并
+  # 保留应用内未读 badge（与 RssUpdateChecker 既有设计一致）。
+  flutter_local_notifications: ^17.2.0
+  # 投屏（Chromecast，纯 Dart 实现，无需 Google Cast SDK）
+  cast: ^2.1.0
+  # bonsoir 是 cast 的传递依赖；cast 2.1.0 只声明 bonsoir: '>=3.0.0'（无上限），
+  # 导致 pub 拉取 6.x。bonsoir 6.0.0 是破坏性升级（ready→initialize()、事件 API 重写），
+  # 与 cast 2.1.0 不兼容。这里显式锁到 5.x 最新版，满足 cast 的 >=3.0.0 约束。
+  bonsoir: ^5.1.11
+  # 画中画（Android 原生 PiP，iOS / 桌面优雅降级）
+  floating: ^6.0.0
+  # 弹幕（canvas_danmaku）。
+  # 本地 vendored 副本：third_party/canvas_danmaku（基于 0.3.1，已打补丁：
+  # 本人发送弹幕由绿色矩形改为「白色胶囊描边」）。如需回到上游官方版，
+  # 改回 `canvas_danmaku: ^0.3.1` 并删除此 path 覆盖即可。
+  canvas_danmaku:
+    path: third_party/canvas_danmaku
+  # 漫画动态效果引擎（上游 https://github.com/nexhub-app/comic-motion-effects
+  # ，2026-09-29 已发布 1.3.1 到 pub.dev，应用侧经此版本依赖引用）。纯 Dart：
+  # 静态漫画页 → 深度分层 → 32 种分层动效（视差/呼吸/天气/光效/漫画动势）→ GIF。
+  # 钉死 1.3.1：1.5.0 新增的效果需先补进 MotionEffectCatalog，暂不升级。
+  comic_motion: 1.3.1
+  # 漫画动态效果 Flutter 组件包：MotionGifView 占位交叉淡入 / 功耗感知静帧，
+  # 另含互动阅读层（InteractivePageLayer）。上游 pub.dev 仅到 0.1.1（无互动层），
+  # 这里以本地 vendored 副本接入（版本 0.3.0，随仓库提交），保证 CI 可复现；
+  # 上游发布对应版本后可改回 ^0.3.0。
+  comic_motion_flutter:
+    path: third_party/comic_motion_flutter
+  # 屏幕亮度控制（阅读器亮度手势）
+  screen_brightness: ^0.2.2
+  # 屏幕常亮（漫画阅读器 keepScreenOn 开关）
+  wakelock_plus: ^1.2.0
+  # 电池电量（阅读器页脚电量显示）
+  battery_plus: ^6.0.0
+  # 带缓存的网络图片（统一 SourceImage，注入防盗链 headers + 重试）
+  cached_network_image: ^3.4.1
+  # 图片磁盘缓存管理（高级设置「图片缓存」占用统计与清理；cached_network_image 同款后端）
+  flutter_cache_manager: ^3.4.2
+  # 图片下载统一走应用网络层（DioImageFileService 组装 StreamedResponse 用）
+  http: ^1.6.0
+  # 剪贴板图片二进制复制（长按菜单「复制图片」，跨平台真复制，Rust 后端需 NDK）
+  super_clipboard: ^0.9.1
+  # 系统分享（详情页分享到微信/QQ/记事本等）
+  share_plus: ^10.1.0
+  # TTS 朗读（小说阅读器）
+  flutter_tts: ^4.2.0
+  # 安全存储敏感凭据（WebDAV 密码）
+  flutter_secure_storage: ^9.0.0
+  # 深链回调捕获（OAuth 登录：nexhub://oauth/callback）
+  app_links: ^6.3.0
+  # 网络状态检测（仅 WiFi 下载模式：判断是否连接 WiFi）
+  connectivity_plus: ^6.1.0
+  # 条漫模式离散 item 追踪（精确页码定位，不依赖滚动比例）
+  scrollable_positioned_list: ^0.3.8
+  # 桌面端真实 OS 全屏（F11 切换 / Esc 退出），移动端仍用 SystemChrome。
+  # 0.5.x 重写了 Windows 线程处理，修复 0.3.x 的 setFullScreen 阻塞死锁
+  # （该版本线程处理已验证稳定，无冻结问题）。
+  window_manager: ^0.5.2
+  # 音量键翻页（REQ-B1）：Android 拦截音量上/下翻页，防止系统音量变化。
+  flutter_volume_controller: ^2.0.1
+  # 后台播放 + 通知栏媒体控件：audio_service 暴露通知/锁屏控制
+  # （Android/iOS/macOS；Windows 不支持，静默降级为无通知），audio_session
+  # 处理音频打断（来电暂停恢复）与拔耳机暂停。
+  audio_service: ^0.18.15
+  audio_session: ^0.2.2
+  material_ui: ^1.4.0
+
+  characters: any
+  meta: any
+  web_socket_channel: ^3.0.3
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  # 从单一源图生成各平台启动图标
+  flutter_launcher_icons: ^0.14.2
+  # Hive 适配器代码生成
+  hive_generator: ^2.0.1
+  build_runner: ^2.4.11
+
+  path_provider_platform_interface: any
+flutter:
+  uses-material-design: true
+  # l10n 代码生成必须开启：flutter build 的 gen_localizations 步骤强制要求
+  # flutter: generate: true，否则直接报 "Attempted to generate localizations
+  # code without having the flutter: generate flag turned on" 并退出。
+  # （之前误以为 gen-l10n 本机卡死才关成 false —— 实为沙箱拦截 flutter 的假象；
+  #  本机 flutter gen-l10n 可正常运行。）开启后 lib/generated/app_localizations*.dart
+  # 由 gen-l10n 自动生成（覆盖旧的手写副本），arb 为唯一真相源，新增键只需改 arb。
+  generate: true
+  assets:
+    - assets/icon/
+    - assets/builtin/
+    - plugins/builtin/
+    - assets/py_spiders/
+    - assets/jars/
+    - assets/live/
+    - assets/source_library/
+    - assets/source_library/sources/manga/
+    - assets/source_library/sources/media/
+    - assets/source_library/sources/novel/
+    - assets/miniapps/
+    - assets/miniapps/builtin/
+    - assets/onekey_templates.json
+    - assets/py_tools/
+    - assets/sniffer/
+    - assets/novel/
+    - assets/announcements.json
+    - assets/shaders/anime4k/
+    # 内置开源字体的许可全文（SIL OFL 1.1 要求随字体分发），main.dart 注册
+    # 进「关于 → 许可」页。字体文件本身走下方 fonts 段，不要加进 assets
+    # （否则同一字体二进制会被打包两份）。
+    - assets/licenses/fonts/
+  # 全局界面字体（外观设置「字体」组），三款均为 SIL OFL 1.1 开源协议。
+  # 各字体仅内置 Regular 一个字重，粗体由渲染引擎合成（伪粗体）。
+  fonts:
+    - family: Smiley Sans
+      fonts:
+        - asset: assets/fonts/SmileySans-Oblique.ttf
+    - family: LXGW WenKai Lite
+      fonts:
+        - asset: assets/fonts/LXGWWenKaiLite-Regular.ttf
+    - family: Source Han Sans CN
+      fonts:
+        - asset: assets/fonts/SourceHanSansCN-Regular.otf
+  # 漫画图片超分用的 Flutter FragmentProgram（shaders 段，构建期编译为 .frag）
+  shaders:
+    - assets/shaders/manga_upscale.frag
+
+# ===== 启动图标生成配置（源图：assets/icon/icon.png）=====
+flutter_launcher_icons:
+  image_path: "assets/icon/icon.png"
+  android: true
+  ios: true
+  windows:
+    generate: true
+    image_path: "assets/icon/icon.png"
+  linux:
+    generate: true
+  web:
+    generate: true
+  macos:
+    generate: true
+  adaptive_icon_background: "#0EA5E9" # 蓝青主色，作为自适应图标背景
+  adaptive_icon_foreground: "assets/icon/icon.png"
+  adaptive_icon_monochrome: "assets/icon/icon_monochrome.png" # Android 13+ 主题图标（莫奈取色）单色图层：白"N"+四角色点

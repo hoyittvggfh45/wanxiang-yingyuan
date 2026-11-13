@@ -1,0 +1,262 @@
+import 'dart:convert';
+
+import 'package:dio/dio.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:hive/hive.dart';
+import 'package:xml/xml.dart';
+
+import 'danmaku_source.dart';
+import 'dandanplay_matcher.dart';
+import 'dandanplay_service.dart';
+import 'bilibili_danmaku_service.dart';
+
+/// Fetcher for a direct danmaku URL body (injectable for testing).
+typedef DanmakuUrlFetcher = Future<String> Function(String url);
+
+/// 弹幕仓库（多源 fallback + Hive 缓存）。
+class DanmakuRepository {
+  DanmakuRepository({
+    required DandanplayService dandanplay,
+    required BilibiliDanmakuService bilibili,
+    required Box<dynamic> cacheBox,
+    DanmakuUrlFetcher? urlFetcher,
+  })  : _dandanplay = dandanplay,
+        _bilibili = bilibili,
+        _cacheBox = cacheBox,
+        _urlFetcher = urlFetcher ?? _defaultUrlFetcher;
+
+  final DandanplayService _dandanplay;
+  final BilibiliDanmakuService _bilibili;
+  final Box<dynamic> _cacheBox;
+  final DanmakuUrlFetcher _urlFetcher;
+
+  /// 搜索弹幕（仅弹弹play）。需要配置凭据。
+  Future<List<DanmakuSearchResult>> search(String keyword) async {
+    await _dandanplay.refreshAvailability();
+    return _dandanplay.search(keyword);
+  }
+
+  /// 获取剧集列表（仅弹弹play）。
+  ///
+  /// [animeTitle] 为作品标题（非 animeId），弹弹play `/search/episodes`
+  /// 接口按标题搜索。
+  Future<List<DanmakuEpisode>> getEpisodes(String animeTitle) async {
+    await _dandanplay.refreshAvailability();
+    return _dandanplay.getEpisodes(animeTitle);
+  }
+
+  /// 即时匹配单集弹幕：委托 [DandanplayMatcher.matchSingle]。
+  ///
+  /// [title] 为完整查询标题（可含集数），[animeTitle] 为分离的作品标题
+  ///（用于相似度校验）。仅在能确认对应关系时返回 episodeId，
+  /// 无法确认时返回 null（不显示弹幕），避免跨标题误匹配。
+  ///
+  /// 供播放器在预填的 dandanplayEpisodeId 为空时兜底使用。
+  /// 凭据未配置时抛出 [StateError]，由播放器提示用户。
+  Future<int?> matchEpisode(String title, {String? animeTitle}) async {
+    if (title.isEmpty) return null;
+    final matcher = _matcher ??= DandanplayMatcher(dandanplay: _dandanplay);
+    return matcher.matchSingle(title, animeTitle: animeTitle);
+  }
+
+  DandanplayMatcher? _matcher;
+
+  /// 获取弹幕，按优先级回退：danmakuUrl → 弹弹play → Bilibili → 缓存。
+  ///
+  /// cacheKey = `$sourceId:$episodeId`。
+  /// [dandanplayEpisodeId] / [bilibiliCid] / [bangumiId] 均为可选，
+  /// 由弹幕自动匹配（BuiltinResolver）填充到 Episode 后透传至此。
+  /// [bangumiId] 当前预留（无 Bangumi 弹幕源），供未来集成使用。
+  /// [danmakuUrl] 非空时作为最高优先级通道，直接 HTTP GET 拉取弹幕
+  ///（兼容弹弹play/Bilibili XML 与自定义 JSON 格式），失败则按原三级回退。
+  Future<List<ParsedDanmakuItem>> getDanmaku({
+    required String sourceId,
+    required String episodeId,
+    int? dandanplayEpisodeId,
+    int? bilibiliCid,
+    int? bangumiId,
+    String? danmakuUrl,
+  }) async {
+    final cacheKey = '$sourceId:$episodeId';
+
+    List<ParsedDanmakuItem> result = const <ParsedDanmakuItem>[];
+
+    // 0. danmakuUrl 直链（最高优先级，用户显式配置）：串行先试，成功即返回。
+    // 直链通常就是 CDN/静态文件，比后续源更快，无需并行竞争。
+    if (danmakuUrl != null && danmakuUrl.isNotEmpty) {
+      try {
+        final body = await _urlFetcher(danmakuUrl);
+        result = _parseUrlBody(body);
+      } on Object {
+        result = const <ParsedDanmakuItem>[];
+      }
+    }
+
+    // 1+2. 弹弹play 与 Bilibili 并行竞争：两者任一成功即用，互不等待。
+    // 旧实现串行回退——弹弹play 服务器慢时（连接/超时可达 15-20s）
+    // 要等它彻底失败才轮到 Bilibili，表现为「弹幕过一会才出现」。
+    // 并行后整体耗时 = 最快成功的源；配合下方缩短的超时，最坏 ~10s。
+    if (result.isEmpty) {
+      final bool canDandan =
+          dandanplayEpisodeId != null && _dandanplay.isAvailable;
+      final bool canBili = bilibiliCid != null;
+      if (canDandan && canBili) {
+        final results = await Future.wait<Object?>(
+          <Future<Object?>>[
+            _dandanplay
+                .getComments(dandanplayEpisodeId.toString())
+                .catchError((Object e) => const <ParsedDanmakuItem>[]),
+            _bilibili
+                .getComments(bilibiliCid.toString())
+                .catchError((Object e) => const <ParsedDanmakuItem>[]),
+          ],
+        );
+        for (final r in results) {
+          if (r is List<ParsedDanmakuItem> && r.isNotEmpty) {
+            result = r;
+            break;
+          }
+        }
+      } else if (canDandan) {
+        try {
+          result =
+              await _dandanplay.getComments(dandanplayEpisodeId.toString());
+        } on Object {
+          result = const <ParsedDanmakuItem>[];
+        }
+      } else if (canBili) {
+        try {
+          result = await _bilibili.getComments(bilibiliCid.toString());
+        } on Object {
+          result = const <ParsedDanmakuItem>[];
+        }
+      }
+    }
+
+    // 3. 缓存 fallback（网络源均失败时尝试缓存）
+    if (result.isEmpty) {
+      final cached = _readCache(cacheKey);
+      if (cached != null) return cached;
+    } else {
+      _writeCache(cacheKey, result);
+    }
+    return result;
+  }
+
+  List<ParsedDanmakuItem>? _readCache(String key) {
+    final raw = _cacheBox.get(key);
+    if (raw is! String || raw.isEmpty) return null;
+    try {
+      final list = jsonDecode(raw) as List<dynamic>;
+      return list
+          .whereType<Map<String, dynamic>>()
+          .map(ParsedDanmakuItem.fromJson)
+          .toList(growable: false);
+    } on Object {
+      return null;
+    }
+  }
+
+  void _writeCache(String key, List<ParsedDanmakuItem> items) {
+    final json = jsonEncode(items.map((e) => e.toJson()).toList());
+    _cacheBox.put(key, json);
+  }
+
+  /// 解析 danmakuUrl 直链返回体（先尝试 XML，再尝试 JSON）。
+  ///
+  /// XML 兼容弹弹play / Bilibili 格式：
+  /// `<i><d p="time,mode,fontSize,color,timestamp,pool,user,rowid">text</d></i>`
+  /// JSON 格式：`{"danmaku":[{"text","time","color","mode"}]}`
+  List<ParsedDanmakuItem> _parseUrlBody(String body) {
+    if (body.isEmpty) return const <ParsedDanmakuItem>[];
+    try {
+      final document = XmlDocument.parse(body);
+      final nodes = document.findAllElements('d');
+      if (nodes.isEmpty) return _parseJsonBody(body);
+      final out = <ParsedDanmakuItem>[];
+      for (final node in nodes) {
+        final p = node.getAttribute('p');
+        final text = node.innerText.trim();
+        if (p == null || text.isEmpty) continue;
+        final parts = p.split(',');
+        if (parts.length < 4) continue;
+        final time = double.tryParse(parts[0]);
+        final modeRaw = int.tryParse(parts[1]);
+        final colorRaw = int.tryParse(parts[3]);
+        if (time == null || modeRaw == null || colorRaw == null) continue;
+        out.add(ParsedDanmakuItem(
+          text: text,
+          time: time,
+          color: _intToColor(colorRaw),
+          mode: _parseMode(modeRaw),
+        ));
+      }
+      return out;
+    } on Object {
+      return _parseJsonBody(body);
+    }
+  }
+
+  List<ParsedDanmakuItem> _parseJsonBody(String body) {
+    try {
+      final data = jsonDecode(body);
+      if (data is! Map<String, dynamic>) return const <ParsedDanmakuItem>[];
+      final list = data['danmaku'];
+      if (list is! List<dynamic>) return const <ParsedDanmakuItem>[];
+      final out = <ParsedDanmakuItem>[];
+      for (final item in list) {
+        if (item is! Map<String, dynamic>) continue;
+        final text = item['text'] as String?;
+        final time = (item['time'] as num?)?.toDouble();
+        if (text == null || text.isEmpty || time == null) continue;
+        final colorRaw = (item['color'] as num?)?.toInt();
+        final modeRaw = (item['mode'] as num?)?.toInt();
+        out.add(ParsedDanmakuItem(
+          text: text,
+          time: time,
+          color:
+              colorRaw != null ? _intToColor(colorRaw) : const Color(0xFFFFFFFF),
+          mode: modeRaw != null ? _parseMode(modeRaw) : DanmakuMode.scroll,
+        ));
+      }
+      return out;
+    } on Object {
+      return const <ParsedDanmakuItem>[];
+    }
+  }
+
+  static DanmakuMode _parseMode(int mode) {
+    switch (mode) {
+      case 4:
+        return DanmakuMode.bottom;
+      case 5:
+        return DanmakuMode.top;
+      default:
+        return DanmakuMode.scroll;
+    }
+  }
+
+  /// `R*65536+G*256+B` 整数转 Color（与弹弹play 编码一致）。
+  static Color _intToColor(int value) {
+    final r = (value >> 16) & 0xff;
+    final g = (value >> 8) & 0xff;
+    final b = value & 0xff;
+    return Color.fromARGB(255, r, g, b);
+  }
+
+  /// 默认 danmakuUrl 拉取器（best-effort，失败抛出由调用方捕获）。
+  static Future<String> _defaultUrlFetcher(String url) async {
+    final dio = Dio(BaseOptions(
+      // 弹幕是辅助功能，不值得长时间等待：直链拉取 8s/10s 上限，
+      // 失败快速交给并行源或缓存兜底。
+      connectTimeout: const Duration(seconds: 8),
+      receiveTimeout: const Duration(seconds: 10),
+      responseType: ResponseType.plain,
+    ));
+    final response = await dio.get<String>(
+      url,
+      options: Options(responseType: ResponseType.plain),
+    );
+    return response.data ?? '';
+  }
+}

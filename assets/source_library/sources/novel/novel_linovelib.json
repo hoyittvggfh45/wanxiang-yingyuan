@@ -1,0 +1,47 @@
+{
+    "header": "{\"Referer\":\"https://www.linovelib.com/\",\"User-Agent\":\"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36\"}",
+    "enabled": true,
+    "bookSourceName": "哔哩轻小说",
+    "ageRating": "general",
+    "bookSourceUrl": "https://www.linovelib.com",
+    "bookSourceType": 0,
+    "bookSourceGroup": "内置书源",
+    "bookSourceComment": "哔哩轻小说(linovelib，原 bilinovel)。章节正文 #TextContent 无字体混淆；长章节按「下一页」分页跟随。搜索端点沙箱被拦，真机可用；并附「最近更新」发现入口保底。",
+    "searchUrl": "https://www.linovelib.com/search?keyword={{key}}",
+    "exploreUrl": "最近更新::https://www.linovelib.com/wenku/lastupdate_0_0_0_0_0_0_0_{{page}}_0.html",
+    "ruleSearch": {
+        "bookList": "div.mind-book",
+        "bookName": "div.bookname a@text",
+        "bookUrl": "div.bookname a@href",
+        "bookCoverUrl": "img@data-original||img@src",
+        "bookAuthor": "div.author a@text"
+    },
+    "ruleExplore": {
+        "bookList": "div.mind-book",
+        "bookName": "div.bookname a@text",
+        "bookUrl": "div.bookname a@href",
+        "bookCoverUrl": "img@data-original||img@src",
+        "bookAuthor": "div.author a@text"
+    },
+    "ruleBookInfo": {
+        "name": "h1.book-name@text",
+        "author": "meta[property=og:novel:author]@content",
+        "coverUrl": ".book-img.fl img@src||meta[property=og:image]@content",
+        "intro": ".book-dec p@text||.Jbook-dec p@text",
+        "kind": "meta[property=og:novel:category]@content",
+        "tocUrl": "meta[property=og:novel:read_url]@content"
+    },
+    "ruleToc": {
+        "chapterList": ".chapter-list a",
+        "chapterName": "@text",
+        "chapterUrl": "@href"
+    },
+    "ruleContent": {
+        "content": "#TextContent p@text||#TextContent@text",
+        "nextContentUrl": "a:contains(下一页)@href"
+    },
+    "display": {
+        "descZh": "哔哩轻小说(linovelib，原 bilinovel)，正文清晰，附「最近更新」发现入口。",
+        "descEn": "linovelib (formerly bilinovel) source with clean text and a latest-updates explore feed."
+    }
+}

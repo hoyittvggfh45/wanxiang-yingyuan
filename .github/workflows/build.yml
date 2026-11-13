@@ -1,0 +1,1013 @@
+# =============================================================================
+# NexHub 自动打包 + 发布工作流（v30 — 全平台统一发布到同一个 Release）
+# -----------------------------------------------------------------------------
+# 触发：推送 v* 标签自动发布；也支持网页手动 Run workflow 试跑。
+#       任何 v* 标签都会构建全部平台（Android / Windows / Linux / macOS / iOS），
+#       产物统一发布到该标签对应的**同一个** GitHub Release；
+#       鸿蒙 HAP 由 build_ohos.yml 并行构建后追加到同一个 Release（不再单独发布）。
+#
+# 修复记录：
+#   v1: 初始版（全部失败：flutter pub get exit code 1）
+#   v2: 尝试 flutter-action@v3 → **v3 不存在**，4 个 job 全部 Unable to resolve action
+#   v3: 改回 subosito/flutter-action@v2，固定 Flutter 3.32.0，加 --verbose；
+#       并修复 intl ^0.19.0→^0.20.2（匹配 flutter_localizations 要求）
+#   v4: 修复 d0537c9 误回退 intl 到 ^0.19.0（重新锁定 ^0.20.2）；
+#       四个编译 job 在 build 前显式 flutter gen-l10n
+#   v5: 移除 ilammy/msvc-dev-cmd@v1（误诊：移除后仍是 "Visual Studio 16 2019" 生成器报错）
+#   v6: 加回 ilammy/msvc-dev-cmd@v1 固定 VS2022（vs-version: '[17,18)'）——
+#       **实测仍失败**：Flutter 3.32 用自身 vswhere 选生成器，ilammy 的环境变量
+#       未能覆盖其生成器偏好，Windows job 依旧报 "Visual Studio 16 2019 ... not found"
+#   v7: Linux job 链接期缺原生库修复：扩充 apt（X11/GL/ALSA/Pulse 等）；
+#       加诊断(precache/doctor)与健壮性(clean 先于 pub get、pub get 重试、build tee)
+#   v8: Release 发布页正文为空修复：release job 加 actions/checkout + allowUpdates: true
+#   v9：
+#     - **Windows CMake "Visual Studio 16 2019 could not find any instance of Visual Studio"
+#       根因定案**：Flutter 3.32.0 在 windows-latest 镜像上误选了残缺的 VS2019 生成器。
+#       ilammy 固定 VS2022（v6）未能覆盖 Flutter 自身 vswhere 的生成器选择，故无效。
+#     - **最终修复**：Windows runner 由 windows-latest 固定为 **windows-2022**
+#       （该镜像的 VS2022 + Windows SDK 与 Flutter [3.32] 期望一致，生成器自动选对），
+#       并移除 ilammy/msvc-dev-cmd@v1 步骤。其余桌面 job 桌面支持与 gen-l10n 保持不变。
+#   v10（当前）：
+#     - **gen-l10n 编译期失败（org-dartlang-untranslatable-uri:package:flutter_gen
+#       /gen_l10n/app_localizations.dart → "AppLocalizations isn't a type"）**：
+#       原 l10n.yaml 未设 output-dir，生成文件落在 .dart_tool/flutter_gen 并通过
+#       **flutter_gen 虚拟包** 导入；CI 内核快照阶段 package_config 未解析该虚拟包，
+#       导致 AppLocalizations 符号缺失，编译报 "isn't a type"。
+#     - **修复**：l10n.yaml 增加 `output-dir: lib/generated`，生成真实文件于包内；
+#       全量替换 92 处导入 `package:flutter_gen/gen_l10n/app_localizations.dart`
+#       → `package:nexhub/generated/app_localizations.dart`（lib+test，备份目录除外）；
+#       lib/generated 加入 .gitignore（由 flutter gen-l10n / generate:true 产出）。
+#       各 job 的 gen-l10n step 增加诊断（ls lib/generated + grep AppLocalizations）。
+#   v11（当前）：
+#     - **Windows gen-l10n 步骤失败（exit code 1, step:6）**：v10 给 gen-l10n 加的诊断命令
+#       使用了 bash 语法（ls -la / grep / || true），但 GitHub Actions Windows runner 默认
+#       shell 为 PowerShell，这些命令在 PS 中不可用导致整步失败（Flutter 甚至没开始编译）。
+#     - **修复**：所有 Windows 的 run 步骤加 `shell: bash`；同时所有平台的编译步骤统一用
+#       `set -o pipefail` + `tee` + 失败时 `tail -n 200~500` 输出关键日志，
+#       确保 Android/Linux/macOS 编译失败时能在 annotation 中看到具体错误原因。
+#   v12-v17：Android Kotlin 2.1.0 + namespace com.nexhub.app + local.properties 解跟踪；
+#       Linux 加 webkit2gtk 依赖；Dart CardTheme/DialogTheme→*Data(Flutter3.32)；
+#       macOS 部署目标 10.14→10.15 + 建 Podfile；Android minSdk 23→24；
+#       macOS Podfile post_install 强制 Pods 部署目标 10.15 + CI flutter clean。
+#       （详见 .workbuddy/memory/2026-07-24.md）
+#   v18：
+#     - **Linux job 仍失败（Run #17 暴露）**：AI 生成的失败"总结"反复把锅甩给
+#       l10n/flutter_gen，但本地核验 l10n 早已根治（output-dir 已设、gen-l10n step 自带
+#       ls+grep 验证、0 残留 flutter_gen 导入），故 l10n 不是本次原因。
+#     - **两处真实缺失**：(1) Linux apt 缺 libxkbcommon-dev / libegl1-mesa-dev 等标准原生
+#       依赖（GL/键盘链接常见失败源）；(2) flutter_build.log 只 tee 不上传，失败后拿不到
+#       真实报错，导致只能瞎猜。
+#     - **修复**：Linux apt 补 libxkbcommon-dev libegl1-mesa-dev libxtst-dev libatk1.0-dev
+#       libcups2-dev libx11-xcb-dev libxcb1-dev libxcomposite-dev libxdamage-dev；
+#       build 步骤后新增 upload-artifact(if:always()) 上传 flutter_build.log。
+#   v19：
+#     - **Run #18 仍失败，拿到真实堆栈**：`buildLinux (build_linux.dart:48)` →
+#       `throwToolExit`，即 cmake/ninja 原生构建子进程返回非 0。**这本身证明 Dart/l10n
+#       早已通过**（cmake 在 Dart 编译之后才运行），l10n 理论彻底证伪。
+#     - 交叉插件清单推定头号嫌疑 `flutter_tts` 需 `libspeechd-dev`，已补
+#       libspeechd-dev libportal-dev libnotify-dev（cmake 真正跑起来后会用到）。
+#   v20：
+#     - **用户下载 Run #18 日志 artifact 贴出，真相大白**：实际报错是
+#       `No Linux desktop project configured.`（`build_linux.dart:48` 抛 ToolExit 的
+#       真正原因）。`linux/` 目录里**只有生成物**（`generated_plugin_registrant.*`、
+#       `icons.png`），**缺 CMakeLists.txt / main.cc / my_application.* **；`.metadata`
+#       的 migration.platforms 也只列 root/ios/macos，**Linux 平台从未被加入工程**。
+#       故 `flutter build linux` 在 cmake 还没跑时就直接报"未配置"——这解释了为何日志里
+#       连 cmake/ninja 字样都搜不到（之前的 libspeechd 猜测是错的，纯属项目结构缺失）。
+#     - **修复**：Linux job 新增"确保 Linux 桌面工程存在"步骤——若 `linux/CMakeLists.txt`
+#       缺失则 `rm -rf linux` 后 `flutter create --platforms=linux .` 重新生成（保留自定义
+#       `linux/flutter/icons.png` 图标），使 `.metadata` 补上 linux 且工程文件齐全。
+#       v19 补的 libspeechd-dev 等保留（cmake 真正链接 flutter_tts 时会用到）。
+#     - 若 Run #20 仍挂，下载 Run #20 的 artifact `linux-flutter-build-log` 搜 `error:`
+#       取首处附近贴出（沙箱无 token 不能直拉 GitHub 日志）。
+#   v21（当前）：
+#     - **用户真机崩溃（Android）**：`java.lang.ClassNotFoundException:
+#       Didn't find class "com.nexhub.app.MainActivity"`。根因：v13 把
+#       `namespace`/`applicationId` 改成 `com.nexhub.app`，但唯一的 Kotlin 主类
+#       `MainActivity.kt` 仍在 `kotlin/com/example/nexhub/` 且 `package
+#       com.example.nexhub`；清单 `.MainActivity` 解析成 `com.nexhub.app.MainActivity`，
+#       而编译出的类路径是 `com.example.nexhub.MainActivity` → 对不上 → 启动即崩溃。
+#     - **修复**：`git mv` 将 `MainActivity.kt` 移到 `kotlin/com/nexhub/app/`，并把
+#       `package` 改为 `com.nexhub.app`（与 namespace 对齐）。清理空 `com/example` 目录。
+#     - **图标诉求（没更新 / 无莫奈取色）**：`pubspec` 已配 `flutter_launcher_icons`
+#       （源图 `assets/icon/icon.png`，adaptive 背景 #0EA5E9），但 `flutter_launcher_icons`
+#       **不会在 `flutter build` 时自动重跑**，故更换源图后 CI 打出的仍是旧 res/ 图标。
+#       **修复**：Android job 在 gen-l10n 后新增 `flutter pub run flutter_launcher_icons`，
+#       每次构建都基于源图重新生成（含自适应图标）。
+#     - **图标莫奈取色（Android 13+ 主题图标）：v0.2.10** 在 `pubspec.yaml` 补
+#       `adaptive_icon_monochrome: "assets/icon/icon_monochrome.png"`（白"N"+四角色点，
+#       luminance 175 自源图标生成，剔除青底渐变），CI 跑 flutter_launcher_icons 后
+#       Android 会一并产出 `ic_launcher_monochrome`，桌面图标按壁纸色取色。
+#   v22：
+#     - **APK 改为单架构分包（`--split-per-abi`）**：`flutter build apk` 增加
+#       `--split-per-abi`，为每个 ABI（arm64-v8a / armeabi-v7a / x86_64）各产出一个独立
+#       APK（不再有统一 fat APK）。artifact 上传与 release 文件清单改为通配
+#       `build/app/outputs/flutter-apk/*.apk`，避免旧路径 app-release.apk 缺失报错。
+#     - **更正（原 v22 注释有误）**：v22 当时称「Windows zip/7z 便携包 + Inno Setup exe
+#       已写入 build.yml」，实际**只落了 zip 便携包，Inno Setup exe 步骤当时并未写入**
+#       build.yml（仓库也无 .iss 脚本）。exe 安装包是到 v23 才真正补齐。
+#   v23：
+#     - **Windows 自定义图标落实**：Windows job 在 build 前新增
+#       `flutter pub run flutter_launcher_icons`，从 `assets/icon/icon.png` 重新生成
+#       `windows/runner/resources/app_icon.ico`，覆盖仓库里那份旧的 Flutter 默认 logo
+#       （原仅 Android job 跑该命令，Windows 一直用默认 logo）。
+#     - **Windows exe 安装包补齐**：新增 `windows/installer/NexHub.iss`（Inno Setup 脚本）
+#       + Windows job 用 Chocolatey 装 Inno Setup 后调 ISCC.exe 编译出
+#       `NexHub-setup-<version>.exe`，单独上传 `windows-installer` artifact；Release 文件
+#       清单新增 `artifacts/windows-installer/NexHub-setup-*.exe`。安装包支持中英文、桌面
+#       快捷方式、非管理员安装（当前用户目录）。
+#   v24（当前，v0.4.0）：
+#     - **Bangumi OAuth 凭据注入补齐**：v0.4.0 新增 Bangumi OAuth 2.0 授权登录，
+#       `BangumiOAuthConfig` 的 clientId / clientSecret 走 `String.fromEnvironment`
+#       编译期注入（源码不存凭据）。原四个平台的 build 命令只注入了 DANMAKU_*，
+#       **未注入 BANGUMI_***，导致 CI 产物里 `configured == false`、OAuth 登录按钮
+#       直接不可用（用户只能手填 Access Token）。
+#     - **修复**：Android / Windows / Linux / macOS 四个 build 命令统一追加
+#       `--dart-define=BANGUMI_CLIENT_ID` 与 `--dart-define=BANGUMI_CLIENT_SECRET`，
+#       取值来自仓库 Secrets。
+#     - **需要新增的仓库 Secrets（缺失时不会报错，只是 OAuth 不可用）**：
+#       `BANGUMI_CLIENT_ID` / `BANGUMI_CLIENT_SECRET`，在 https://bgm.tv/dev/app/create
+#       注册应用获得，回调地址必须填 `nexhub://oauth/callback`。
+#   v25（当前，v2.0.0-beta.2）：
+#     - **安装包扩容（全套）**：在原有「Android 单架构分包 + Windows 便携/安装包 +
+#       Linux tar.gz + macOS zip」基础上新增四类安装包，覆盖更多用户安装习惯：
+#       1) **Android 通用 APK（fat）**：保留 `--split-per-abi` 三分包的同时，额外跑一次
+#          `flutter build apk --release`（无 split）产出 `app-release.apk` 单文件全架构，
+#          方便不想按 ABI 选包的用户直接装；
+#       2) **Linux .deb**：用 `dpkg-deb` 把 `build/linux/x64/release/bundle` 打成
+#          `NexHub-linux-x64.deb`（opt/nexhub + /usr/bin 软链 + desktop + 图标）；
+#       3) **Linux .AppImage**：用 `linuxdeploy` + flutter 插件打成 `NexHub-linux-x64.AppImage`
+#          （best-effort，产物缺失仅警告不阻断发布）；
+#       4) **macOS .dmg**：`hdiutil create` 把 `.app` 打成 `NexHub-macos.dmg`，与 zip 并存。
+#       Release 文件清单同步纳入上述新包（通用 APK 已含在通配 *.apk 内）。
+#   v26（当前，v2.0.0-beta.2 补）：
+#     - **Linux .AppImage 步骤失败 exit code 8**：原脚本 `set -e` 下，linuxdeploy 的
+#       `--plugin flutter` 主命令失败后，兜底命令 `./linuxdeploy.AppImage --appdir ... --output appimage`
+#       也未加 `||` 容错，导致 `set -e` 直接中断整个 Linux job、连带阻断 release；且 GitHub
+#       ubuntu 运行实例默认未装 `libfuse2`，linuxdeploy / flutter 插件 AppImage 自挂载失败是
+#       该 exit code 的真实根因之一。
+#     - **修复**：AppImage 步骤内 `sudo apt-get install -y libfuse2`（装不上也不致命），
+#       两个 linuxdeploy 调用均加 `--appimage-extract-and-run` 规避 FUSE；整体 `set +e` 且
+#       末尾 `exit 0`，确保 AppImage 打不出也不影响发布（tar.gz/deb 仍在）；新增
+#       `linux-appimage-log` artifact（if:always()）上传 `appimage_build.log` 便于失败复现。
+#   v27（当前，v2.0.0-beta.4 修复）：
+#     - **Android 编译在 cargokit 原生构建任务必挂**：`:irondash_engine_context:
+#       cargokitCargoBuild…` 报 `Could not find method exec()`。根因是 Gradle 9 移除了
+#       `Project.exec(...)` 整个方法（不止 Closure 重载，Action 重载也没有了），而 irondash 0.5.5
+#       自带的 cargokit（gradle/plugin.gradle 第 60/65 行）仍用 `project.exec { … }` 闭包；
+#       本地能过只是因为 Rust 产物已缓存、该 task 被跳过（UP-TO-DATE），CI 为 clean 构建必跑到这行。
+#     - **第一版补丁没生效的坑**：glob 写成精确的 `cargokit`（路径段必须正好叫 cargokit），
+#       但 pub 缓存里的目录实为 `cargokit-<版本号>`，所以一个都没匹配到、静默「跳过」，
+#       Gradle 9 下照样崩。修正为 `cargokit*`，并加上「找不到 / 打不上就 sys.exit(1) 显式失败」
+#       的防静默逻辑（避免上游改结构后在 Gradle 深处报一个看不懂的错）。
+#     - **第二版补丁仍漏改关键块的坑**：第 65 行那处真正执行 cargo 构建的 exec 块里含 GString
+#       `"${buildDir}/build_tool"`，其 `{ }` 花括号让只认 `[^{}]*` 的正则提前断裂、整个块匹配失败，
+#       结果只改了第 60 行的 chmod 块、构建块仍是 Gradle 9 不支持的闭包写法 → 照挂。修正为先用
+#       `\x00…\x00` 占位符屏蔽 `${...}` 再匹配、匹配完还原。
+#     - **第三版方向仍错**：把 `project.exec { … }` 改写成 `project.exec { spec -> … }`（Groovy
+#       SAM 闭包）仍失败——因为方法 `Project.exec` 本身已被 Gradle 9 移除，只是换个闭包写法照样
+#       调用不存在的方法。正确替代是 Gradle 8.1+ 的 `ProviderFactory.exec`，即 `project.providers.exec
+#       { spec -> … }`；且脚本插件 classpath 不含 Gradle API 类，故不能用 `new Action<ExecSpec>()`
+#       显式类型引用（会报 unable to resolve class），只能靠 SAM 闭包让 spec 类型由方法签名推断。
+#     - **第四版（最终）补上惰性 Provider 的坑**：`project.providers.exec { … }` 只创建 ExecSpec、
+#       返回一个**惰性 Provider**，命令并不会真正执行——cargokit 任务会"成功"但零产出（Rust .so
+#       从未编译），APK 因此缺 `libirondash_engine_context_native.so`，运行时 `System.loadLibrary`
+#       抛 `UnsatisfiedLinkError` 白屏秒退。最终写法是 `project.providers.exec { spec -> … }.result.get()`，
+#       用 `.result.get()` 消费 Provider、强制同步执行并等待命令完成。补丁兼容三态（原始
+#       `project.exec`、旧 `project.exec { spec ->`、上一版 `project.providers.exec { spec ->`），
+#       幂等判定也收紧为检测 `.result.get()`，免得旧的错误产物被跳过。
+#     - **移除条件**：irondash 发布 Gradle 9 兼容版（cargokit 改用 `project.providers.exec { … }.result.get()`）后，本步可删除。
+#   v28（当前）：
+#     - **Windows 发布包缺 ECH 本地引擎（echproxy.dll）**：桌面 ECH 经 dart:ffi 加载
+#       echproxy.dll（bangumi_ech_proxy.dart 的 FfiEchBackend），windows/CMakeLists.txt
+#       的 install 规则此前指向 android/rust/target/ 下的 cargo 产物——该目录 gitignored，
+#       本地存在（build-windows.sh 构建过）、CI checkout 没有，if(EXISTS) 静默跳过 →
+#       发布的 zip/exe 均无引擎，设置里切 ECH 提示不可用并回退。本地构建因产物存在而
+#       正常，故从未在开发机暴露。
+#     - **修复**：CMake 改为优先用 windows/dll/echproxy.dll（build-windows.sh 的产物
+#       落点，已入库，checkout 即有），回落 cargo 产物，两者皆缺时 message(WARNING)
+#       不再静默；Windows job 编译后新增校验步骤，Release 产物缺 echproxy.dll 即显式失败。
+#     - **其他平台排查**：Android 三个 ABI 的 jniLibs libechproxy.so 均已入库、Gradle 自动
+#       打包，无此 bug（仍加校验步骤防回归）；Linux/macOS 引擎本体（libechproxy.so /
+#       .dylib）尚无构建脚本与入库产物，属功能缺口（FFI 后端安全降级），非本次打包问题。
+#   v29（当前）：
+#     - **新增 iOS 无签名构建 job**：在 macos-latest 上跑 `flutter build ios --release
+#       --no-codesign`，产出未签名的 Runner.app，再手动塞进 Payload/ 打成标准
+#       `NexHub-ios.ipa`（自签/越狱侧载用）。未签名 IPA 无法直接装入非越狱真机，仅作
+#       构建产物分发。Release 文件清单与 needs 同步纳入 ios-build。
+#     - **iOS 工程 Podfile 缺失**：仓库 ios/ 已含 Runner.xcodeproj，但 ios/Podfile 未入库，
+#       `flutter build ios` 在 pod install 阶段会因找不到 Podfile 失败。job 内加「确保 iOS
+#       工程存在」步骤——Podfile 缺失时用 `flutter create --platforms=ios .` 重新生成
+#       （含 Podfile，保留既有 Runner 代码与配置），与 Linux job 的保工程逻辑一致。
+#     - **包名统一**：ios/Runner.xcodeproj/project.pbxproj 的 PRODUCT_BUNDLE_IDENTIFIER
+#       已从默认 com.example.nexhub 改为 com.nexhub.app，与 Android 的 com.nexhub.app 一致；
+#       侧载用户用本地自签工具（AltStore / Sideloadly 等）对未签名 IPA 重新签名即可安装。
+#   v30（当前）：
+#     - **发布统一**：取消「标签含 ohos 就跳过本工作流」的特例。此前用 `vX.Y.Z-ohos-beta.N`
+#       这类标签发鸿蒙包时，本工作流 5 个平台 job 全部跳过，鸿蒙工作流自成一条独立 Release，
+#       结果是同一版本在 Release 列表里出现两个条目（一个只有 HAP、一个没有 HAP）。
+#       现改为：**任何 v* 标签都构建全部平台**，Android/Windows/Linux/macOS/iOS 与鸿蒙 HAP
+#       全部落到同一个 Release 页面；鸿蒙工作流（build_ohos.yml）只负责并行编译 + 追加产物，
+#       不再有「鸿蒙独占发布」的概念。
+#     - **发版纪律**：一个版本只打一个标签（如 `v3.1.2` / `v3.1.2-beta.1`），
+#       **不再使用 `-ohos` 后缀标签**；鸿蒙产物不再单独发版。
+# =============================================================================
+
+name: Build & Release WanxiangYingyuan
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+
+  android:
+    name: Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 从分片拼回 drpy-node 内置小程序（59MB 大文件走不了接口上传）
+        run: |
+          cat drpy_chunks/com.leospring.drpy_node.zip.part-* > assets/miniapps/builtin/com.leospring.drpy_node.zip
+          ls -l assets/miniapps/builtin/com.leospring.drpy_node.zip
+          echo "6c47c482170f07d9911ff7257405e8f6  assets/miniapps/builtin/com.leospring.drpy_node.zip" | md5sum -c -
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.0'
+          channel: 'stable'
+          cache: true
+      - name: 获取依赖
+        run: flutter pub get 2>&1
+      - name: 修补插件 proguard 配置以兼容 AGP 9
+        # AGP 9.0 起彻底移除了 getDefaultProguardFile('proguard-android.txt')，
+        # 仍调用它的旧插件（如 flutter_inappwebview_android 1.1.3，官方 issue #2852 未发版修复）
+        # 会在评估期直接 FAILURE。这里在构建前把 pub 缓存里所有插件 android/build.gradle 中的
+        # proguard-android.txt 替换为官方推荐的 proguard-android-optimize.txt。
+        # 仅改 pub 缓存，不触碰仓库源码；应用 release 已关闭 minify，库模块行为不受影响。
+        shell: bash
+        run: |
+          PUB_CACHE_DIR="${PUB_CACHE:-$HOME/.pub-cache}"
+          count=0
+          while IFS= read -r f; do
+            if grep -q "proguard-android\.txt" "$f"; then
+              sed -i 's/proguard-android\.txt/proguard-android-optimize.txt/g' "$f"
+              echo "patched: $f"
+              count=$((count+1))
+            fi
+          done < <(find "$PUB_CACHE_DIR" -path '*/android/build.gradle' 2>/dev/null)
+          if [ "$count" -eq 0 ]; then
+            echo "未发现需要修补的 proguard-android.txt（插件可能已兼容 AGP 9），跳过"
+          else
+            echo "共修补 $count 个插件 build.gradle"
+          fi
+      - name: 修补 cargokit exec 调用以兼容 Gradle 9
+        # Gradle 9 移除了 Project.exec(...) 方法本身（不止 Closure 重载，Action 重载也没有了），
+        # irondash 0.5.5 自带的 cargokit (gradle/plugin.gradle) 仍用 project.exec { ... }，
+        # 执行期必报 "Could not find method exec()"。Gradle 8.1+ 的替代是
+        # ProviderFactory.exec，即 project.providers.exec { spec -> spec.xxx }。
+        # 注意1：之前一版补丁只把 project.exec { 改成 project.exec { spec ->，方向错了——
+        #   方法本身已不存在，构建照样失败；必须替换为 project.providers.exec。
+        # 注意2（关键坑）：providers.exec 返回的是**惰性 Provider**，仅创建 ExecSpec 不会
+        #   真正执行命令！必须补 `.result.get()` 消费 Provider 才会运行 run_build_tool.sh
+        #   下载/编译 Rust .so。只换 providers.exec 而不 get() 会让 cargokit 任务"成功"但
+        #   零产出（Gradle 日志：Task has not declared any outputs）、APK 缺 irondash .so、
+        #   运行时 UnsatisfiedLinkError 白屏秒退。此前一版正是栽在这里。
+        # 关键：plugin.gradle 作为脚本插件，其编译 classpath 不含 Gradle API 类，
+        # 故不能用 new Action<ExecSpec>() 这种显式类型引用（会报 unable to resolve class），
+        # 只能靠 Groovy 对 providers.exec(Action) 的 SAM 闭包适配（spec 类型由参数推断）。
+        # 仅改 pub 缓存，不触碰仓库源码；irondash 发布修复后可移除本步。
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PUB_CACHE_DIR="${PUB_CACHE:-$HOME/.pub-cache}"
+          python3 - <<'PY'
+          import glob, os, re, sys
+          patched = 0
+          found = 0
+          pub_cache_dir = os.environ.get('PUB_CACHE_DIR') or os.environ.get('PUB_CACHE') or os.path.expanduser('~/.pub-cache')
+          # 注意：pub 缓存里目录名为 cargokit-<版本号>（如 cargokit-1.5.1），
+          # 不能用精确的 'cargokit'，否则 glob 匹配不到任何文件、静默跳过。
+          # 第二处 exec 块里含 GString "${buildDir}"，其 { } 花括号会让只认 [^{}]* 的正则
+          # 在匹配时提前断裂，导致该关键构建块漏改、Gradle 9 下照挂。故先用占位符屏蔽
+          # ${...} 再匹配，匹配后还原。
+          # 匹配 project.exec { ... } 或 project.providers.exec { ... }（兼容历版补丁残留）：
+          # 统一改写为 project.providers.exec { spec -> ... }.result.get()（result.get() 消费惰性
+          # Provider，真正执行命令）。(?!\s*\.result) 防重复追加。(?!spec\b) 分支兼容已带 spec 的旧产物。
+          pattern = re.compile(r'project(?:\.providers)?\.exec\s*\{(?!\s*\.result)([^{}]*)\}(?!\s*\.result)', re.S)
+          method_re = re.compile(r'^(\s+)(commandLine|executable|args|environment|workingDir|standardOutput|errorOutput|ignoreExitValue|standardInput|setStandardOutput|setErrorOutput)(\s)')
+          # 注意3（第二个坑）：providers.exec 的 value-source 隔离机制要求 ExecSpec 参数
+          # **可序列化**。cargokit 直接把 java.nio.file.Path / File 对象传给 executable /
+          # environment / commandLine（旧 project.exec 会自动 toString，新 API 不会），
+          # .result.get() 时抛 "Could not serialize value of type UnixPath/WindowsPath"。
+          # 故对 cargokit 模板里固定的三个对象参数补 .toString()（模板固定，safe）。
+          obj_to_string = [
+              ('spec.executable path', 'spec.executable path.toString()'),
+              ("spec.commandLine 'chmod', '+x', path",
+               "spec.commandLine 'chmod', '+x', path.toString()"),
+              ('"CARGOKIT_ROOT_PROJECT_DIR", rootProjectDir',
+               '"CARGOKIT_ROOT_PROJECT_DIR", rootProjectDir.toString()'),
+              ('"CARGOKIT_MANIFEST_DIR", manifestDir',
+               '"CARGOKIT_MANIFEST_DIR", manifestDir.toString()'),
+          ]
+          def defang_object_args(body):
+              for old, new in obj_to_string:
+                  body = body.replace(old, new)
+              return body
+          def repl(m):
+              body = m.group(1)
+              if re.search(r'spec\s*->', body):
+                  # 旧版补丁残留：body 已带 spec. 前缀，只需补 .result.get() 并修正对象参数
+                  return 'project.providers.exec {' + defang_object_args(body) + '}.result.get()'
+              new_lines = []
+              for line in body.split('\n'):
+                  new_lines.append(method_re.sub(r'\1spec.\2\3', line))
+              return 'project.providers.exec { spec ->' + defang_object_args('\n'.join(new_lines)) + '}.result.get()'
+          gs_re = re.compile(r'\$\{[^}]*\}')
+          for path in glob.glob(os.path.join(pub_cache_dir, '**', 'cargokit*', 'gradle', 'plugin.gradle'), recursive=True):
+              found += 1
+              with open(path, 'r', encoding='utf-8') as f:
+                  src = f.read()
+              if '.result.get()' in src and 'executable path.toString()' in src:
+                  continue  # 已是最终形式（providers.exec + result.get() + toString），跳过
+              if '.result.get()' in src:
+                  # 兼容上一轮残留产物：已有 providers.exec { ... }.result.get() 但缺
+                  # .toString()（否则序列化错误再次出现）。只需补对象参数的 toString，
+                  # 结构已是终态，无需经 pattern 重构。
+                  new_src = defang_object_args(src)
+                  if 'path.toString()' not in new_src or new_src == src:
+                      print(f"!! 上轮残留升级失败，结构不符: {path}")
+                      sys.exit(1)
+                  with open(path, 'w', encoding='utf-8') as f:
+                      f.write(new_src)
+                  patched += 1
+                  print(f"upgraded legacy result.get() -> +toString: {path}")
+                  continue
+              # 屏蔽 GString 的 ${...} 花括号，避免正则 [^{}]* 提前断裂、漏改关键构建块
+              protected_src = gs_re.sub(lambda mm: '\x00' + mm.group(0)[2:-1] + '\x00', src)
+              new_protected, n = pattern.subn(repl, protected_src)
+              if n == 0:
+                  # 文件存在但闭包结构已变化，无法自动修补：显式失败，避免后续在
+                  # Gradle 深处报一个莫名其妙的 "Could not find method exec()"。
+                  print(f"!! cargokit plugin.gradle 结构已变化，无法自动修补: {path}")
+                  sys.exit(1)
+              # 还原 ${...}
+              new_src = re.sub('\x00([^\x00]*)\x00', lambda mm: '${' + mm.group(1) + '}', new_protected)
+              if '.result.get()' not in new_src or 'spec.' not in new_src:
+                  print(f"!! 修补后未见 result.get()/spec. 调用，疑似正则失效: {path}")
+                  sys.exit(1)
+              with open(path, 'w', encoding='utf-8') as f:
+                  f.write(new_src)
+              patched += n
+              print(f"patched ({n} exec blocks): {path}")
+          if found == 0:
+              print("!! 未在 pub 缓存中找到任何 cargokit plugin.gradle，无法修补 Gradle 9 兼容问题")
+              sys.exit(1)
+          if patched == 0:
+              print("cargokit plugin.gradle 已包含 Gradle 9 兼容写法（无需修补）")
+          else:
+              print(f"共修补 {patched} 处 cargokit exec 调用")
+          PY
+      - name: 修补插件 JVM target 一致性问题（Kotlin 2.2+ fatal diagnostic）
+        # Kotlin 2.2+ 把「Java 与 Kotlin 编译 target 不一致」从警告升级为致命错误：
+        #   Inconsistent JVM-target compatibility detected for tasks
+        #   'compileReleaseJavaWithJavac' (11) and 'compileReleaseKotlin' (1.8).
+        # flutter_js 0.8.7 只设了 kotlinOptions { jvmTarget = 1.8 }、没设 compileOptions，
+        # Java 侧用 AGP/Flutter 默认（11），两边不一致即 FAIL。这里给这类插件补一个与
+        # 其 jvmTarget 匹配的 compileOptions（Java 也编译到 1.8），让两边对齐。
+        # 通用处理：遍历 pub 缓存所有插件 android/build.gradle，凡有 kotlinOptions.jvmTarget
+        # 但 android 块里没有 compileOptions 的，就补上。幂等：已有 compileOptions 则跳过。
+        # 仅改 pub 缓存，不触碰仓库源码；上游发布修复后可移除本步。
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PUB_CACHE_DIR="${PUB_CACHE:-$HOME/.pub-cache}"
+          python3 - <<'PY'
+          import glob, os, re, sys
+          patched = 0
+          found = 0
+          pub_cache_dir = os.environ.get('PUB_CACHE_DIR') or os.environ.get('PUB_CACHE') or os.path.expanduser('~/.pub-cache')
+          # 匹配 kotlinOptions { ... jvmTarget = ... } 块，并提取 JavaVersion 常量（如 VERSION_1_8）
+          ko_re = re.compile(r'kotlinOptions\s*\{[^{}]*?jvmTarget\s*=\s*(?:JavaVersion\.)?(VERSION_\d+(?:_\d+)?)(?:\.toString\(\))?[^{}]*\}', re.S)
+          for path in glob.glob(os.path.join(pub_cache_dir, '**', '*', 'android', 'build.gradle'), recursive=True):
+              with open(path, 'r', encoding='utf-8') as f:
+                  src = f.read()
+              if 'compileOptions' in src:
+                  continue  # 已有 Java target 设置（无论是否与 Kotlin 一致都由作者负责），跳过
+              m = ko_re.search(src)
+              if not m:
+                  continue  # 没设 jvmTarget 或结构不符，不需要处理
+              found += 1
+              version = m.group(1)  # 形如 VERSION_1_8
+              # 在匹配到的 kotlinOptions 块所在行之前插入 compileOptions（与 jvmTarget 同版本），
+              # 复用该行的缩进，保证插入位置准确。
+              line_start = src.rfind('\n', 0, m.start()) + 1
+              indent = re.match(r'[ \t]*', src[line_start:]).group(0)
+              insert = (
+                  f"{indent}compileOptions {{\n"
+                  f"{indent}    sourceCompatibility JavaVersion.{version}\n"
+                  f"{indent}    targetCompatibility JavaVersion.{version}\n"
+                  f"{indent}}}\n"
+              )
+              new_src = src[:line_start] + insert + src[line_start:]
+              if 'compileOptions' not in new_src:
+                  print(f"!! 无法插入 compileOptions: {path}")
+                  sys.exit(1)
+              with open(path, 'w', encoding='utf-8') as f:
+                  f.write(new_src)
+              patched += 1
+              print(f"patched JVM target ({version}): {path}")
+          if found == 0:
+              print("未发现需要修补 JVM target 的插件（上游可能已修复）")
+          else:
+              print(f"共修补 {patched} 个插件的 JVM target")
+          PY
+      - name: 生成多语言文件 (gen-l10n)
+        run: |
+          flutter gen-l10n 2>&1
+          echo "== generated l10n files =="
+          ls -la lib/generated 2>&1 || true
+          grep -n "class AppLocalizations" lib/generated/app_localizations.dart 2>&1 || true
+      - name: 重新生成启动图标 (flutter_launcher_icons)
+        # 源图：assets/icon/icon.png（含 adaptive_icon_background 蓝青主色 #0EA5E9）。
+        # flutter_launcher_icons 不会在 `flutter build` 时自动重跑，故这里显式生成，
+        # 保证每次构建都基于源图产出最新图标（含自适应图标，Android 12+ 莫奈取色生效）。
+        run: flutter pub run flutter_launcher_icons 2>&1 || dart run flutter_launcher_icons 2>&1
+      - name: 还原签名 keystore（从 Secrets）
+        # keystore 与签名密码已不入库：ANDROID_KEYSTORE_BASE64 为 jks 文件的 base64，
+        # 其余三项为签名凭据。Secrets 缺失（如 fork PR）时跳过，
+        # build.gradle.kts 会自动回落 debug 签名，保证仍可编译。
+        shell: bash
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "ANDROID_KEYSTORE_BASE64 secret 未配置，跳过（将回落 debug 签名）"
+            exit 0
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > android/app/upload-keystore.jks
+          {
+            echo "storePassword=$KEYSTORE_PASSWORD"
+            echo "keyPassword=$KEY_PASSWORD"
+            echo "keyAlias=$KEY_ALIAS"
+            echo "storeFile=app/upload-keystore.jks"
+          } > android/key.properties
+          echo "keystore 与 key.properties 已还原"
+      - name: 编译 APK
+        shell: bash
+        run: |
+          set -o pipefail
+          flutter build apk --release --split-per-abi --verbose --dart-define=DANMAKU_APP_ID=${{ secrets.DANMAKU_APP_ID }} --dart-define=DANMAKU_APP_SECRET=${{ secrets.DANMAKU_APP_SECRET }} --dart-define=BANGUMI_CLIENT_ID=${{ secrets.BANGUMI_CLIENT_ID }} --dart-define=BANGUMI_CLIENT_SECRET=${{ secrets.BANGUMI_CLIENT_SECRET }} 2>&1 | tee apk_build.log || { echo "=== ANDROID BUILD FAILED ===" && tail -n 500 apk_build.log; exit 1; }
+      - name: 编译通用 APK（fat，单文件全架构）
+        # 与上方 --split-per-abi 分包并存：本步产出 app-release.apk（一个包适配所有 ABI），
+        # 方便不想按架构挑包的用户直接安装。产物同样落在 build/app/outputs/flutter-apk/，
+        # 由下方通配 *.apk 一并上传。
+        shell: bash
+        run: |
+          set -o pipefail
+          flutter build apk --release --verbose --dart-define=DANMAKU_APP_ID=${{ secrets.DANMAKU_APP_ID }} --dart-define=DANMAKU_APP_SECRET=${{ secrets.DANMAKU_APP_SECRET }} --dart-define=BANGUMI_CLIENT_ID=${{ secrets.BANGUMI_CLIENT_ID }} --dart-define=BANGUMI_CLIENT_SECRET=${{ secrets.BANGUMI_CLIENT_SECRET }} 2>&1 | tee apk_fat_build.log || { echo "=== ANDROID FAT APK BUILD FAILED ===" && tail -n 500 apk_fat_build.log; exit 1; }
+      - name: 校验 ECH 引擎已打包 (libechproxy.so)
+        # 三个 ABI 的 jniLibs/libechproxy.so 均已入库、Gradle 自动打包（现状无此 bug）。
+        # 此校验防回归：若未来 jniLibs 被误删/被 abiFilters 过滤，这里显式失败而不是
+        # 静默发布 ECH 不可用的 APK。fat APK 含全 ABI，分包 APK 各含其一，逐一检查。
+        shell: bash
+        run: |
+          set -e
+          missing=0
+          for apk in build/app/outputs/flutter-apk/*.apk; do
+            if ! unzip -l "$apk" | grep -q "libechproxy.so"; then
+              echo "!! $apk 缺少 libechproxy.so（ECH 本地引擎未打包）"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            echo "== flutter-apk 目录内容 =="
+            ls -la build/app/outputs/flutter-apk/
+            exit 1
+          fi
+          echo "全部 APK 均含 libechproxy.so"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: build/app/outputs/flutter-apk/*.apk
+          if-no-files-found: error
+
+  windows:
+    name: Windows
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.0'
+          channel: 'stable'
+          cache: true
+      - name: 启用 Windows 桌面支持
+        run: flutter config --enable-windows-desktop
+      - name: 获取依赖
+        run: flutter pub get 2>&1
+      - name: 生成多语言文件 (gen-l10n)
+        shell: bash
+        run: |
+          flutter gen-l10n 2>&1
+          echo "== generated l10n files =="
+          ls -la lib/generated 2>&1 || true
+          grep -n "class AppLocalizations" lib/generated/app_localizations.dart 2>&1 || true
+      - name: 重新生成启动图标 (flutter_launcher_icons)
+        # 源图：assets/icon/icon.png（含 adaptive_icon_background 蓝青主色 #0EA5E9）。
+        # 确保 Windows 也用上自定义图标（覆盖仓库里那份旧的 Flutter 默认 logo），
+        # 同时重新生成 Android 自适应图标资源。每次构建都基于源图重新生成。
+        run: flutter pub run flutter_launcher_icons 2>&1 || dart run flutter_launcher_icons 2>&1
+      - name: 编译 Windows
+        shell: bash
+        run: |
+          set -o pipefail
+          flutter build windows --release --verbose --dart-define=DANMAKU_APP_ID=${{ secrets.DANMAKU_APP_ID }} --dart-define=DANMAKU_APP_SECRET=${{ secrets.DANMAKU_APP_SECRET }} --dart-define=BANGUMI_CLIENT_ID=${{ secrets.BANGUMI_CLIENT_ID }} --dart-define=BANGUMI_CLIENT_SECRET=${{ secrets.BANGUMI_CLIENT_SECRET }} 2>&1 | tee win_build.log || { echo "=== WINDOWS BUILD FAILED ===" && tail -n 200 win_build.log; exit 1; }
+      - name: 校验 ECH 本地引擎已打包 (echproxy.dll)
+        # windows/CMakeLists.txt 的 install 规则若因 DLL 缺失被跳过，flutter build
+        # 不会报错（v27 及以前的 CI 产物就是这样静默丢了 ECH 引擎，本地因 cargo
+        # 产物存在而正常）。这里显式校验 Release 产物里有 echproxy.dll，缺失即失败，
+        # 避免再次静默发布无引擎的包（zip 与 Inno Setup 安装包都基于同一 Release 目录）。
+        shell: bash
+        run: |
+          set -e
+          DLL="build/windows/x64/runner/Release/echproxy.dll"
+          if [ ! -f "$DLL" ]; then
+            echo "!! Release 产物缺少 echproxy.dll（ECH 本地引擎未打包）"
+            echo "== Release 目录内容 =="
+            ls -la build/windows/x64/runner/Release/
+            exit 1
+          fi
+          echo "echproxy.dll 已打包: $(du -h "$DLL" | cut -f1)"
+      - name: 打包 Windows 安装文件
+        run: Compress-Archive -Path "build/windows/x64/runner/Release/*" -DestinationPath "WanxiangYingyuan-windows-x64.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: WanxiangYingyuan-windows-x64.zip
+          if-no-files-found: error
+      - name: 计算版本号（去掉 v 前缀，供安装包使用）
+        id: ver
+        shell: bash
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+      - name: 打包 Windows 安装包 (Inno Setup -> exe)
+        # 脚本：windows/installer/NexHub.iss；MyAppVersion 由 /D 传入（已去 v）。
+        # 图标用上一步 flutter_launcher_icons 重新生成的自定义 app_icon.ico。
+        # 用 Chocolatey 装 Inno Setup 后直接调 ISCC.exe（不依赖第三方 action 仓库，
+        # 避免 minissoftware/Inno-Setup-Action 仓库不存在导致 Windows 构建失败）。
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          choco install innosetup -y
+          New-Item -ItemType Directory -Force -Path windows/installer/Output | Out-Null
+          $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
+          if (-not (Test-Path $iscc)) {
+            Write-Error "ISCC.exe not found at $iscc - Inno Setup 安装失败或路径不同"
+            exit 1
+          }
+          # 提前校验中文语言文件存在，避免 ISCC 编译到一半才因缺文件 abort（报错难定位）
+          $isl = "windows\installer\Languages\ChineseSimplified.isl"
+          if (-not (Test-Path $isl)) {
+            Write-Error "缺少安装包中文语言文件: $isl"
+            Write-Host "windows/installer 目录内容："
+            Get-ChildItem -Path windows/installer -Recurse | ForEach-Object { Write-Host $_.FullName }
+            exit 1
+          }
+          & $iscc "windows/installer/WanxiangYingyuan.iss" "/DMyAppVersion=$env:VERSION"
+          # ISCC 可能把 exe 写到仓库根 Output/ 或 windows/installer/Output/（取决于 OutputDir 解析），
+          # 兜底：两个位置都找，找到就复制到 windows/installer/Output（上传步骤期望的位置）
+          $expectedDirs = @('windows\installer\Output', 'Output')
+          $out = $null
+          foreach ($d in $expectedDirs) {
+            if (Test-Path $d) {
+              $files = Get-ChildItem -Path $d -Filter *.exe -Recurse -ErrorAction SilentlyContinue
+              if ($files -and $files.Count -gt 0) { $out = $files[0]; break }
+            }
+          }
+          if (-not $out) {
+            Write-Error "ISCC 未产出安装包 exe（windows/installer/Output 与 Output 下均未找到 *.exe）"
+            Write-Host "windows/installer 目录内容："
+            Get-ChildItem -Path windows/installer -Recurse | ForEach-Object { Write-Host $_.FullName }
+            Write-Host "根目录 Output 目录内容："
+            if (Test-Path Output) { Get-ChildItem -Path Output -Recurse | ForEach-Object { Write-Host $_.FullName } }
+            exit 1
+          }
+          # 守卫复制：源与目标相同时（OutputDir 已直接写到 windows/installer/Output）跳过，
+          # 避免 PowerShell 报 "Cannot overwrite the item ... with itself" 导致 step 失败。
+          # 关键：目标路径也要转成绝对路径再比，否则相对路径 vs 绝对路径比较永远不相等。
+          $destDir = "windows/installer/Output"
+          New-Item -ItemType Directory -Force -Path $destDir | Out-Null
+          $destPathFull = [System.IO.Path]::GetFullPath((Join-Path $destDir $out.Name))
+          if (-not (Test-Path $out.FullName)) {
+            Write-Error "Expected installer not found: $($out.FullName)"
+            exit 1
+          }
+          Write-Host "Source: $($out.FullName)"
+          Write-Host "Dest  : $destPathFull"
+          if ($out.FullName -ieq $destPathFull) {
+            Write-Host "Installer already in destination: $destPathFull — skipping copy"
+          } else {
+            Write-Host "Copying installer $($out.FullName) -> $destDir"
+            try {
+              Copy-Item -Path $out.FullName -Destination $destDir -Force -ErrorAction Stop
+            } catch {
+              Write-Warning "Failed to copy installer: $($_.Exception.Message) — continuing if benign overwrite"
+              throw
+            }
+          }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: windows/installer/Output/*.exe
+          if-no-files-found: error
+
+  linux:
+    name: Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 安装 Linux 编译依赖（更完整）
+        run: |
+          set -e
+          sudo apt-get update -y
+          sudo apt-get install -y \
+            build-essential clang cmake ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev libsecret-1-dev libportal-dev libnotify-dev \
+            libx11-dev libx11-xcb-dev libxcb1-dev libxkbcommon-dev \
+            libxcursor-dev libxrandr-dev libxi-dev libxcomposite-dev libxdamage-dev libxtst-dev \
+            libatk1.0-dev libcups2-dev \
+            libasound2-dev libxss1 libpulse-dev libspeechd-dev \
+            libglu1-mesa-dev libgl1-mesa-dev libegl1-mesa-dev \
+            libwebkit2gtk-4.1-dev libjsoncpp-dev libmpv-dev
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.0'
+          channel: 'stable'
+          cache: true
+      - name: 启用 Linux 桌面支持
+        run: flutter config --enable-linux-desktop
+      - name: 确保 Linux 桌面工程存在（缺失则生成）
+        run: |
+          set -e
+          if [ -f linux/CMakeLists.txt ]; then
+            echo "Linux 桌面工程已存在，跳过生成"
+          else
+            echo "缺失 linux/CMakeLists.txt，重新生成 Linux 桌面工程"
+            ICON=linux/flutter/icons.png
+            [ -f "$ICON" ] && cp "$ICON" /tmp/wxyy_icon.png || true
+            rm -rf linux
+            flutter create --platforms=linux .
+            [ -f /tmp/wxyy_icon.png ] && cp /tmp/wxyy_icon.png linux/flutter/icons.png || true
+          fi
+          echo "== linux/ 结构 =="
+          ls -la linux
+      - name: 重新生成启动图标 (flutter_launcher_icons)
+        # 覆盖 flutter create 生成的默认 Logo（仓库里 linux/ 被简化、没有 runner/，
+        # flutter create 会放 Flutter 默认 Logo 当应用图标；这里用 NexHub 自定义图标覆盖）。
+        run: flutter pub run flutter_launcher_icons 2>&1 || dart run flutter_launcher_icons 2>&1
+      - name: Flutter 环境与诊断 (debug)
+        run: |
+          echo "FLUTTER_ROOT: ${FLUTTER_ROOT:-<unset>}"
+          flutter --version
+          flutter doctor -v || true
+          uname -a
+          lsb_release -a || true
+      - name: Precache Flutter Linux 产物
+        run: flutter precache --linux
+      - name: 清理旧缓存（置于 pub get 之前，安全）
+        run: flutter clean || true
+      - name: 获取依赖 (verbose + 重试)
+        run: |
+          set -eux
+          if flutter pub get; then
+            echo "pub get succeeded"
+          else
+            echo "pub get 失败，改用 verbose 输出重试..."
+            flutter pub get --verbose > pubget.log 2>&1 || true
+            tail -n 500 pubget.log
+            exit 1
+          fi
+      - name: 生成多语言文件 (gen-l10n)
+        run: |
+          flutter gen-l10n 2>&1
+          echo "== generated l10n files =="
+          ls -la lib/generated 2>&1 || true
+          grep -n "class AppLocalizations" lib/generated/app_localizations.dart 2>&1 || true
+      - name: 编译 Linux (verbose + 日志)
+        run: |
+          set -o pipefail
+          flutter build linux --release --verbose --dart-define=DANMAKU_APP_ID=${{ secrets.DANMAKU_APP_ID }} --dart-define=DANMAKU_APP_SECRET=${{ secrets.DANMAKU_APP_SECRET }} --dart-define=BANGUMI_CLIENT_ID=${{ secrets.BANGUMI_CLIENT_ID }} --dart-define=BANGUMI_CLIENT_SECRET=${{ secrets.BANGUMI_CLIENT_SECRET }} 2>&1 | tee flutter_build.log || { tail -n 500 flutter_build.log; exit 1; }
+      - name: 上传构建日志 (始终，便于失败排查)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-flutter-build-log
+          path: flutter_build.log
+          if-no-files-found: ignore
+      - name: 打包 Linux 安装文件
+        run: tar -czf WanxiangYingyuan-linux-x64.tar.gz -C build/linux/x64/release bundle
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-build
+          path: WanxiangYingyuan-linux-x64.tar.gz
+          if-no-files-found: error
+      - name: 计算版本号（去掉 v 前缀，供 deb/AppImage 使用）
+        id: ver
+        shell: bash
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+      - name: 打包 Linux .deb 安装包
+        # 用 dpkg-deb 把 release bundle 打成 deb：opt/nexhub 放整套产物，
+        # /usr/bin/nexhub 软链到可执行，附带 desktop 入口与图标。
+        shell: bash
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          set -e
+          BUNDLE=build/linux/x64/release/bundle
+          STAGE=wxyy-deb
+          rm -rf "$STAGE"
+          mkdir -p "$STAGE/DEBIAN" "$STAGE/opt/wxyy" "$STAGE/usr/bin" \
+                   "$STAGE/usr/share/applications" \
+                   "$STAGE/usr/share/icons/hicolor/256x256/apps"
+          cp -r "$BUNDLE/." "$STAGE/opt/wxyy/"
+          ln -s /opt/wxyy/wxyy "$STAGE/usr/bin/wxyy"
+          cat > "$STAGE/DEBIAN/control" <<EOF
+          Package: wxyy
+          Version: ${VERSION}
+          Section: multimedia
+          Priority: optional
+          Architecture: amd64
+          Depends: libgtk-3-0, libwebkit2gtk-4.1-0, libmpv1 | libmpv2, libsecret-1-0, libjsoncpp25, libglu1-mesa, libpulse0, libasound2, libnotify4
+          Maintainer: WanxiangYingyuan <noreply@example.com>
+          Description: WanxiangYingyuan - 媒体聚合客户端（动漫/漫画/小说/影视）
+           一款插件驱动的跨模块媒体聚合客户端。
+          EOF
+          cat > "$STAGE/usr/share/applications/wxyy.desktop" <<'EOF'
+          [Desktop Entry]
+          Name=WanxiangYingyuan
+          Comment=媒体聚合客户端（动漫/漫画/小说/影视）
+          Exec=/opt/wxyy/wxyy
+          Icon=wxyy
+          Type=Application
+          Categories=AudioVideo;Video;Utility;
+          Terminal=false
+          EOF
+          if [ -f assets/icon/icon.png ]; then
+            cp assets/icon/icon.png "$STAGE/usr/share/icons/hicolor/256x256/apps/wxyy.png"
+          fi
+          dpkg-deb --build "$STAGE" "WanxiangYingyuan-linux-x64.deb"
+          ls -la WanxiangYingyuan-linux-x64.deb
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-deb
+          path: WanxiangYingyuan-linux-x64.deb
+          if-no-files-found: error
+      - name: 打包 Linux .AppImage（best-effort）
+        # 用 linuxdeploy + flutter 插件把 bundle 打成 AppImage。该步骤依赖外部下载，
+        # 失败仅警告、不阻断发布（仍保留 tar.gz 与 deb）。
+        # 历史坑（v2.0.0-beta.2 实测 exit code 8）：
+        #   GitHub ubuntu 运行实例默认未装 libfuse2，linuxdeploy / 插件 AppImage 自挂载失败；
+        #   且原脚本 --plugin flutter 主命令失败后，兜底命令未加 || 容错，set -e 直接中断
+        #   整个 Linux job、连带阻断 release。现改为：装 libfuse2 + 全程 --appimage-extract-and-run
+        #   规避 FUSE，整体 set +e 且末尾 exit 0，确保 AppImage 打不出也不影响发布。
+        shell: bash
+        run: |
+          set -e
+          BUNDLE=build/linux/x64/release/bundle
+          APPDIR=AppDir
+          rm -rf "$APPDIR" WanxiangYingyuan-linux-x64.AppImage appimage_build.log
+          mkdir -p "$APPDIR/usr/bin" "$APPDIR/usr/share/applications" \
+                   "$APPDIR/usr/share/icons/hicolor/256x256/apps"
+          cp -r "$BUNDLE/." "$APPDIR/usr/bin/"
+          cat > "$APPDIR/usr/share/applications/wxyy.desktop" <<'EOF'
+          [Desktop Entry]
+          Name=WanxiangYingyuan
+          Comment=媒体聚合客户端（动漫/漫画/小说/影视）
+          Exec=wxyy
+          Icon=wxyy
+          Type=Application
+          Categories=AudioVideo;Video;Utility;
+          Terminal=false
+          EOF
+          if [ -f assets/icon/icon.png ]; then
+            cp assets/icon/icon.png "$APPDIR/usr/share/icons/hicolor/256x256/apps/wxyy.png"
+          fi
+          # AppImage 运行需要 libfuse2（ubuntu 22.04+ 默认未装），装不上也不致命
+          sudo apt-get install -y libfuse2 2>&1 | tail -n 5 || true
+          # flutter bundle 已是自包含 ELF + 资源，无需 linuxdeploy-plugin-flutter。
+          # 该 continuous 插件返回空 --plugin-api-version，会报 "Could not find plugin: flutter"，故弃用。
+          # 直接用 linuxdeploy --output appimage 打包；linuxdeploy 产出文件名形如
+          # NexHub-x86_64.AppImage，统一重命名为工作流期望的 NexHub-linux-x64.AppImage。
+          export PATH="$PWD:$PATH"
+          set +e
+          wget -q "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage" -O linuxdeploy.AppImage
+          chmod +x linuxdeploy.AppImage
+          ./linuxdeploy.AppImage --appimage-extract-and-run --appdir "$APPDIR" --output appimage > appimage_build.log 2>&1
+          RC=$?
+          set -e
+          # linuxdeploy 产出文件名不确定（通常 NexHub-x86_64.AppImage），统一重命名为预期名
+          if [ ! -f WanxiangYingyuan-linux-x64.AppImage ]; then
+            SRC=$(ls WanxiangYingyuan-*.AppImage 2>/dev/null | head -n1)
+            if [ -n "$SRC" ]; then
+              mv "$SRC" WanxiangYingyuan-linux-x64.AppImage
+            fi
+          fi
+          if [ -f WanxiangYingyuan-linux-x64.AppImage ]; then
+            echo "AppImage 已产出："
+            ls -la WanxiangYingyuan-linux-x64.AppImage
+          else
+            echo "AppImage 未产出（best-effort 跳过，不阻断发布），rc=$RC"
+            echo "== appimage_build.log 末尾 =="
+            tail -n 60 appimage_build.log 2>/dev/null || true
+          fi
+          exit 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: linux-appimage-log
+          path: appimage_build.log
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-appimage
+          path: WanxiangYingyuan-linux-x64.AppImage
+          if-no-files-found: warn
+
+  macos:
+    name: macOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.0'
+          channel: 'stable'
+          cache: true
+      - name: 启用 macOS 桌面支持
+        run: flutter config --enable-macos-desktop
+      - name: 清理旧缓存（强制重建 Pods，确保部署目标 10.15 生效）
+        run: flutter clean || true
+      - name: 获取依赖
+        run: flutter pub get 2>&1
+      - name: 生成多语言文件 (gen-l10n)
+        run: |
+          flutter gen-l10n 2>&1
+          echo "== generated l10n files =="
+          ls -la lib/generated 2>&1 || true
+          grep -n "class AppLocalizations" lib/generated/app_localizations.dart 2>&1 || true
+      - name: 重新生成启动图标 (flutter_launcher_icons)
+        # 用 assets/icon/icon.png 重新生成 macOS AppIcon.appiconset，
+        # 避免仓库里 commit 的旧图标（与源图不一致）。
+        run: flutter pub run flutter_launcher_icons 2>&1 || dart run flutter_launcher_icons 2>&1
+      - name: 编译 macOS
+        shell: bash
+        run: |
+          set -o pipefail
+          flutter build macos --release --verbose --dart-define=DANMAKU_APP_ID=${{ secrets.DANMAKU_APP_ID }} --dart-define=DANMAKU_APP_SECRET=${{ secrets.DANMAKU_APP_SECRET }} --dart-define=BANGUMI_CLIENT_ID=${{ secrets.BANGUMI_CLIENT_ID }} --dart-define=BANGUMI_CLIENT_SECRET=${{ secrets.BANGUMI_CLIENT_SECRET }} 2>&1 | tee macos_build.log || { echo "=== MACOS BUILD FAILED ===" && tail -n 500 macos_build.log; exit 1; }
+      - name: 打包 macOS 安装文件
+        run: |
+          APP=$(find build/macos/Build/Products/Release -maxdepth 1 -name '*.app' | head -n1)
+          echo "找到 App: $APP"
+          ditto -c -k --sequesterRsrc --keepParent "$APP" WanxiangYingyuan-macos.zip
+      - name: 打包 macOS .dmg 安装镜像
+        # 用 hdiutil 把 .app 打成 dmg，与 zip 并存，方便双击挂载安装。
+        run: |
+          APP=$(find build/macos/Build/Products/Release -maxdepth 1 -name '*.app' | head -n1)
+          echo "找到 App: $APP"
+          hdiutil create -volname WanxiangYingyuan -srcfolder "$APP" -ov -format UDZO WanxiangYingyuan-macos.dmg
+          ls -la WanxiangYingyuan-macos.dmg
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-build
+          path: WanxiangYingyuan-macos.zip
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-dmg
+          path: WanxiangYingyuan-macos.dmg
+          if-no-files-found: error
+
+  ios:
+    name: iOS (无签名)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 从分片拼回 drpy-node 内置小程序（59MB 大文件走不了接口上传）
+        run: |
+          cat drpy_chunks/com.leospring.drpy_node.zip.part-* > assets/miniapps/builtin/com.leospring.drpy_node.zip
+          ls -l assets/miniapps/builtin/com.leospring.drpy_node.zip
+          echo "6c47c482170f07d9911ff7257405e8f6  assets/miniapps/builtin/com.leospring.drpy_node.zip" | md5sum -c -
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.0'
+          channel: 'stable'
+          cache: true
+      - name: 启用 iOS 支持
+        run: flutter config --enable-ios
+      - name: 清理旧缓存（强制重建 Pods）
+        run: flutter clean || true
+      - name: 校验 iOS 工程文件（Podfile 随仓库提交）
+        # Podfile 已入库，直接校验存在性；不再现场 flutter create 生成
+        # （那会覆写 Runner.xcodeproj 的包名与工程配置）。
+        shell: bash
+        run: |
+          set -e
+          test -f ios/Podfile || { echo "::error::缺少 ios/Podfile"; exit 1; }
+          echo "ios/Podfile 就绪"
+          ls -la ios
+
+      - name: 获取依赖
+        run: flutter pub get 2>&1
+      - name: 生成多语言文件 (gen-l10n)
+        run: |
+          flutter gen-l10n 2>&1
+          echo "== generated l10n files =="
+          ls -la lib/generated 2>&1 || true
+          grep -n "class AppLocalizations" lib/generated/app_localizations.dart 2>&1 || true
+      - name: 重新生成启动图标 (flutter_launcher_icons)
+        # 用 assets/icon/icon.png 重新生成 iOS AppIcon.appiconset。
+        run: flutter pub run flutter_launcher_icons 2>&1 || dart run flutter_launcher_icons 2>&1
+      - name: 编译 iOS（无签名）
+        # --no-codesign：跳过代码签名，产出未签名的 Runner.app。
+        # 未签名 IPA 无法直接装入非越狱真机，仅作构建产物/自签分发使用。
+        shell: bash
+        run: |
+          set -o pipefail
+          flutter build ios --release --no-codesign --verbose --dart-define=DANMAKU_APP_ID=${{ secrets.DANMAKU_APP_ID }} --dart-define=DANMAKU_APP_SECRET=${{ secrets.DANMAKU_APP_SECRET }} --dart-define=BANGUMI_CLIENT_ID=${{ secrets.BANGUMI_CLIENT_ID }} --dart-define=BANGUMI_CLIENT_SECRET=${{ secrets.BANGUMI_CLIENT_SECRET }} 2>&1 | tee ios_build.log || { echo "=== IOS BUILD FAILED ===" && tail -n 500 ios_build.log; exit 1; }
+      - name: 校验 Runner.app 已产出
+        shell: bash
+        run: |
+          set -e
+          APP=build/ios/iphoneos/Runner.app
+          if [ ! -d "$APP" ]; then
+            echo "!! 未找到 $APP"
+            echo "== build/ios 结构 =="
+            find build/ios -maxdepth 3 -type d | head -n 40
+            exit 1
+          fi
+          echo "Runner.app 已产出: $(du -sh "$APP" | cut -f1)"
+      - name: 打包未签名 IPA
+        # 未签名无法走 `flutter build ipa` 的 export 流程（export 需 team/签名），
+        # 故手动把 Runner.app 塞进 Payload/ 并 zip 成标准 .ipa（自签/越狱侧载用）。
+        shell: bash
+        run: |
+          set -e
+          ROOT="$PWD"
+          APP_DIR="$ROOT/build/ios/iphoneos"
+          rm -rf "$APP_DIR/Payload" "$ROOT/WanxiangYingyuan-ios.ipa"
+          mkdir -p "$APP_DIR/Payload"
+          cp -r "$APP_DIR/Runner.app" "$APP_DIR/Payload/"
+          # zip 在 Payload 同级目录执行，产物落在 APP_DIR；随后移回仓库根，
+          # 与下方 upload-artifact 的 path 保持一致。
+          ( cd "$APP_DIR" && zip -qr WanxiangYingyuan-ios.ipa Payload )
+          mv "$APP_DIR/WanxiangYingyuan-ios.ipa" "$ROOT/WanxiangYingyuan-ios.ipa"
+          ls -la "$ROOT/WanxiangYingyuan-ios.ipa"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-build
+          path: WanxiangYingyuan-ios.ipa
+          if-no-files-found: error
+
+  release:
+    name: 发布到 GitHub Releases
+    # 注意：鸿蒙 HAP 不在下方 files 清单里——它由并行的 build_ohos.yml 追加到同一条
+    # Release（跨 workflow 无法用 needs 汇总，故两条工作流各自 append 同一 Release）。
+    needs: [android, windows, linux, macos, ios]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: 创建 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: WanxiangYingyuan ${{ github.ref_name }}
+          body_path: RELEASE_BODY.md
+          allowUpdates: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          files: |
+            artifacts/android-apk/*.apk
+            artifacts/windows-build/WanxiangYingyuan-windows-x64.zip
+            artifacts/windows-installer/WanxiangYingyuan-setup-*.exe
+            artifacts/linux-build/WanxiangYingyuan-linux-x64.tar.gz
+            artifacts/linux-deb/WanxiangYingyuan-linux-x64.deb
+            artifacts/linux-appimage/WanxiangYingyuan-linux-x64.AppImage
+            artifacts/macos-build/WanxiangYingyuan-macos.zip
+            artifacts/macos-dmg/WanxiangYingyuan-macos.dmg
+            artifacts/ios-build/WanxiangYingyuan-ios.ipa

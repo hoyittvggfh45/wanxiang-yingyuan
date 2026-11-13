@@ -1,0 +1,646 @@
+/// 让源自带的 WebView（flutter_inappwebview）也跟随源的「网络覆盖」配置。
+///
+/// 背景：WebView 走系统 WebView 网络栈，默认不读源的 `network` 块
+/// （hosts / DoH / 手动代理）。而引擎自带 HttpClient 已通过
+/// [DnsResolver] 按源 profile 解析（见 [NetworkClientBuilder]）。本文件补齐
+/// WebView 一侧：起一个本地正向代理，把命中源域名的 WebView 流量经
+/// [DnsResolver] 解析（hosts 优先、回退 DoH、再回退系统），从而绕开 DNS 污染。
+///
+/// 接线：Android 侧经 `ProxyController.setProxyOverride` 用**静态全量规则**把
+/// WebView 全部流量导到本地正向代理（API 28+；androidx `ProxyConfig` 只认
+/// `[scheme=]host[:port]` 规则，不支持 PAC/域名分流，hosts/DoH 的按域解析由
+/// 本地代理完成，非源域名由代理按系统 DNS 回退）。鸿蒙侧走
+/// `flutter_inappwebview_ohos` 已封装的 ArkWeb `ProxyController`
+/// （`webview.ProxyController.applyProxyOverride`，API 15+，作用域=应用内全部
+/// `Web` 组件）；规则格式为 `[scheme://]host[:port]`，本地正向代理同样负责
+/// hosts/DoH 的按域解析。Windows 侧 WebView2 不支持运行期 ProxyController，
+/// 改为创建带 `--proxy-server` 启动参数的 WebView2 环境
+/// （[WebViewEnvironment]）：hosts/DoH 模式全量指向本地正向代理，手动代理模式
+/// 直指用户代理。不同启动参数必须配不同 `userDataFolder`（WebView2 共享浏览器
+/// 进程按 options 匹配，不匹配 → ERROR_INVALID_STATE）。
+/// 本文件只做配置驱动的逻辑，不写死任何站点。
+library;
+
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:path_provider/path_provider.dart';
+
+import '../../models/plugin_config.dart';
+import '../../platform/platform_service.dart';
+import '../model/network_config.dart';
+import 'dns_resolver.dart';
+import 'webview_proxy_rule.dart';
+import '../network_config_service.dart';
+
+/// 源 WebView 网络跟随桥（进程内单例）。
+///
+/// 用法：打开源 WebView 前调用 [applyForSource]，关闭后调用 [releaseForSource]。
+/// 多次 apply 以引用计数共享同一本地代理与 ProxyController 覆盖。
+class WebviewSourceNetwork {
+  WebviewSourceNetwork._();
+  static final WebviewSourceNetwork instance = WebviewSourceNetwork._();
+
+  static const MethodChannel _channel =
+      MethodChannel('wxyy/webview_proxy');
+
+  HttpServer? _server;
+  int _port = 0;
+  int _refCount = 0;
+
+  // Windows：带启动参数的 WebView2 环境缓存（key=完整启动参数串）与当前生效环境。
+  final Map<String, WebViewEnvironment> _windowsEnvs =
+      <String, WebViewEnvironment>{};
+  WebViewEnvironment? _activeEnv;
+
+  /// 当前 WebView 窗口（apply/release 之间）应使用的 WebView2 环境。
+  ///
+  /// 仅 Windows 且本次 apply 成功创建/复用代理环境时非空；窗口外恒为 null
+  /// （WebView 构造点不传 env → 平台默认环境，行为与改动前一致）。
+  WebViewEnvironment? get activeEnvironment =>
+      _refCount > 0 ? _activeEnv : null;
+
+  // 当前生效的源 DNS 配置（供本地代理解析使用）。
+  DnsConfig? _dns;
+  List<HostsEntry>? _hosts;
+
+  /// 当前持有跟随的源 id（首个 apply 的源）。
+  String? _currentSourceId;
+
+  /// 打开源 WebView 前调用：若该源声明了 hosts/DoH/手动代理，则让 WebView 跟随。
+  ///
+  /// [source] 为 null 时直接返回（无网络覆盖可应用）。
+  ///
+  /// 叠加语义（先到先得）：已有跟随在生效时不再重建 PAC/代理——异源抢占会
+  /// 换掉共享本地代理的解析配置，打断正在使用的其它源 WebView；同源重复
+  /// apply 也无需重建（配置幂等）。仍递增引用计数保证 apply/release 严格
+  /// 配对，全部 release 后下次 apply 重新生效。
+  Future<void> applyForSource(PluginConfig? source) async {
+    if (source == null) return;
+    if (_refCount > 0) {
+      if (_currentSourceId != source.id) {
+        debugPrint(
+            'WebviewSourceNetwork: source ${source.id} skipped, '
+            'follow $_currentSourceId active');
+      }
+      _refCount++;
+      return;
+    }
+    _currentSourceId = source.id;
+    try {
+      final profile = NetworkConfigService.instance.effectiveFor(source);
+    final hasCustomDns =
+        profile.hosts.isNotEmpty || profile.needsCustomConnection;
+    final manualProxy = profile.proxy.mode == ProxyMode.manual &&
+        profile.proxy.host.isNotEmpty &&
+        profile.proxy.port > 0;
+    if (!hasCustomDns && !manualProxy) return;
+
+    // 手动代理模式：直接让 ProxyController 走该代理，无需本地代理。
+    if (!hasCustomDns && manualProxy) {
+      // 规则语法因平台而异：androidx ProxyConfig 为 `[scheme=]host[:port]`
+      // （裸 host:port 即 HTTP 代理，socks 必须带 `socks5=` 前缀；原先发的
+      // 'SOCKS h:p' / 'PROXY h:p' 不是合法规则，被静默忽略 → WebView 直连）；
+      // ArkWeb ProxyConfig 为 `[scheme://]host[:port]`。
+      final proxyUrl = webviewProxyRuleUrl(
+        profile.proxy.host,
+        profile.proxy.port,
+        ohos: PlatformService.instance.isOHOS,
+        socks5: profile.proxy.protocol == ProxyProtocol.socks5,
+      );
+      final ok = await _setProxy(proxyUrl: proxyUrl);
+      if (ok) {
+        _refCount++;
+      } else {
+        // Windows 等 ProxyController 不可用平台：WebView2 用 --proxy-server
+        // 启动参数直指用户代理（socks5 → socks5:// 前缀）。（该分支 hosts 必空：
+        // hasCustomDns 含 hosts 非空判定，故无需 resolver-rules。）
+        final env = await _ensureWindowsEnv(windowsBrowserArgs(
+          proxyArg: windowsProxyServerArg(
+            profile.proxy.host,
+            profile.proxy.port,
+            socks5: profile.proxy.protocol == ProxyProtocol.socks5,
+          ),
+        ));
+        if (env != null) {
+          _refCount++;
+        } else {
+          debugPrint(
+              'WebviewSourceNetwork: WebView2 env unavailable, WebView 未跟随源代理'
+              '（后续诊断看 env create failed 行）');
+        }
+      }
+      return;
+    }
+
+    // hosts / DoH 模式：WebView 全量走本地正向代理（androidx ProxyConfig 不
+    // 支持 PAC/域名分流——此前发 'pac+http://...' 被当非法规则忽略，WebView
+    // 直连系统 DNS 命中污染；改为静态规则后，hosts/DoH 的按域解析由本地代理
+    // 完成，语义与 Windows 全量转发一致）。
+    await _ensureStarted();
+    _dns = profile.dns;
+    _hosts = profile.hosts;
+
+    final ok = await _setProxy(
+      proxyUrl: webviewProxyRuleUrl(
+        '127.0.0.1',
+        _port,
+        ohos: PlatformService.instance.isOHOS,
+      ),
+    );
+    if (ok) {
+      _refCount++;
+    } else {
+      // Windows 等 ProxyController 不可用平台：双通路——①WebView2 全量指向
+      // 本地正向代理（不用 PAC-URL——WebView2 对 PAC 的拉取行为不稳；本地代理
+      // 按 hosts→DoH→系统回退解析，语义与 Android PAC 一致）。代理常驻保证
+      // 端口稳定。②--host-resolver-rules 直接把源域 MAP 到 hosts IP：即便
+      // 代理线程挂掉，DIRECT 流量也能按 hosts 正确解析（Chromium 通用参数）。
+      final env = await _ensureWindowsEnv(windowsBrowserArgs(
+        proxyArg: '127.0.0.1:$_port',
+        hostMaps: hostResolverRules(profile.hosts),
+      ));
+      if (env != null) {
+        _refCount++;
+      } else {
+        debugPrint(
+            'WebviewSourceNetwork: WebView2 env unavailable, WebView 未跟随源 hosts'
+            '（后续诊断看 env create failed 行）');
+      }
+    }
+    } on Object catch (e) {
+      // 网络跟随是 best-effort：任何失败都不应阻断验证 WebView 打开。
+      debugPrint('WebviewSourceNetwork.applyForSource failed: $e');
+    }
+  }
+
+  /// 关闭源 WebView 后调用：引用归零时清除 ProxyController 覆盖并停代理。
+  ///
+  /// Windows 下本地代理与 WebView2 环境**常驻**（仅摘除 activeEnvironment）：
+  /// 环境销毁/重建会连带浏览器进程重启，且停代理会换端口使已缓存环境失效。
+  Future<void> releaseForSource() async {
+    if (_refCount <= 0) return;
+    _refCount--;
+    if (_refCount > 0) return;
+    _activeEnv = null;
+    try {
+      await _clearProxy();
+      if (!PlatformService.instance.isWindows) await _stop();
+    } on Object catch (e) {
+      debugPrint('WebviewSourceNetwork.releaseForSource failed: $e');
+    }
+    _dns = null;
+    _hosts = null;
+    _currentSourceId = null;
+  }
+
+  // ---- Windows WebView2 环境（--proxy-server 启动参数）----
+
+  /// 取（或创建）绑定 [browserArgs]（完整 Chromium 启动参数串）的 WebView2 环境。
+  ///
+  /// 命中缓存直接复用；否则在应用支持目录下按参数哈希建独立 userDataFolder
+  /// （WebView2 共享浏览器进程按启动选项匹配，不同参数共用目录 →
+  /// ERROR_INVALID_STATE）。失败 debugPrint 回传 null（best-effort，同
+  /// Android 侧 MissingPluginException 语义），不阻断 WebView 打开。
+  Future<WebViewEnvironment?> _ensureWindowsEnv(String browserArgs) async {
+    if (!PlatformService.instance.isWindows) return null;
+    final cached = _windowsEnvs[browserArgs];
+    if (cached != null) {
+      _activeEnv = cached;
+      return cached;
+    }
+    try {
+      final supportDir = await getApplicationSupportDirectory();
+      final folder =
+          '${supportDir.path}${Platform.pathSeparator}webview2-${stableHash(browserArgs)}';
+      final env = await WebViewEnvironment.create(
+        settings: WebViewEnvironmentSettings(
+          additionalBrowserArguments: browserArgs,
+          userDataFolder: folder,
+        ),
+      );
+      _windowsEnvs[browserArgs] = env;
+      _activeEnv = env;
+      debugPrint(
+          'WebviewSourceNetwork: WebView2 env ready args=$browserArgs userDataFolder=$folder');
+      return env;
+    } on Object catch (e) {
+      debugPrint('WebviewSourceNetwork: WebView2 env create failed: $e');
+      return null;
+    }
+  }
+
+  /// 组装 Windows WebView2 启动参数串（纯函数）。
+  ///
+  /// `[proxyArg]`：`--proxy-server` 值（可空——hosts 直连模式不需要代理）。
+  /// `[hostMaps]`：`--host-resolver-rules` 的 `MAP host ip` 映射（可空）。两条
+  /// 通路并存：代理是全量转发兜底，resolver-rules 让 Chromium DNS 直接按 hosts
+  /// 解析——即便代理挂掉，DIRECT 流量也能命中正确服务器。
+  /// 同输入恒同输出（MAP 项由调用方保证去重排序），保证缓存 key 稳定复用。
+  static String windowsBrowserArgs({
+    String? proxyArg,
+    List<String> hostMaps = const <String>[],
+  }) {
+    final parts = <String>[];
+    if (proxyArg != null && proxyArg.isNotEmpty) {
+      parts.add('--proxy-server=$proxyArg');
+    }
+    if (hostMaps.isNotEmpty) {
+      // --host-resolver-rules 语法：多条规则逗号连接，规则内部以空格分词
+      // （MAP host ip / EXCLUDE host）。整段值含空格必须整体加引号：WebView2
+      // 把 additionalBrowserArguments 原样追加进浏览器命令行，不引号会被
+      // Chromium 按空格切碎（开关值只剩 'MAP'）→ 规则全部失效，WebView 直接
+      // 用系统 DNS 解析命中污染 IP（Windows DIRECT 兜底从未真正生效的根因）。
+      parts.add('--host-resolver-rules="${hostMaps.join(',')},EXCLUDE localhost"');
+    }
+    return parts.join(' ');
+  }
+
+  /// 由 hosts 配置生成 `MAP host ip` 规则列表（纯函数，确定性排序）。
+  ///
+  /// 仅取 enabled 且 host/ip 均非空的条目；host 统一小写去重，同一 host 多 IP
+  /// 时取第一个（Chromium resolver-rules 每域只接受一条 MAP）。
+  static List<String> hostResolverRules(List<HostsEntry> hosts) {
+    final byHost = <String, String>{};
+    for (final h in hosts) {
+      if (!h.enabled || h.host.isEmpty || h.ip.isEmpty) continue;
+      byHost.putIfAbsent(h.host.toLowerCase(), () => h.ip.trim());
+    }
+    final keys = byHost.keys.toList()..sort();
+    return [for (final k in keys) 'MAP $k ${byHost[k]}'];
+  }
+
+  /// Windows WebView2 `--proxy-server` 参数值（纯函数）。
+  ///
+  /// WebView2 原生接受 `host:port` 与 `socks5://host:port` 形态；socks5 不带
+  /// scheme 会被当作 HTTP 代理静默失败，故必须显式前缀。
+  static String windowsProxyServerArg(
+    String host,
+    int port, {
+    bool socks5 = false,
+  }) =>
+      socks5 ? 'socks5://$host:$port' : '$host:$port';
+
+  /// FNV-1a 32 位哈希（十六进制）：为启动参数派生跨重启稳定的目录名。
+  static String stableHash(String input) {
+    var h = 0x811c9dc5;
+    for (final unit in input.codeUnits) {
+      h ^= unit & 0xff;
+      h = (h * 0x01000193) & 0xFFFFFFFF;
+      h ^= unit >> 8;
+      h = (h * 0x01000193) & 0xFFFFFFFF;
+    }
+    return h.toRadixString(16).padLeft(8, '0');
+  }
+
+  // ---- 本地正向代理 ----
+
+  Future<void> _ensureStarted() async {
+    if (_server != null) return;
+    _server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    _port = _server!.port;
+    _server!.listen(_onRequest);
+  }
+
+  Future<void> _stop() async {
+    await _server?.close(force: true);
+    _server = null;
+    _port = 0;
+  }
+
+  Future<void> _onRequest(HttpRequest request) async {
+    if (request.method == 'CONNECT') {
+      await _tunnel(request, 443);
+    } else {
+      await _forward(request);
+    }
+  }
+
+  /// HTTPS 隧道：CONNECT host:port → 解析 IP → 直连 → 双向透传。
+  Future<void> _tunnel(HttpRequest request, int defaultPort) async {
+    // dart:io 对 CONNECT 请求的解析有坑（实测 Dart 3.x）：`request.uri` 把
+    // `hanime1.me:443` 解析成 scheme=`hanime1.me` / path=`443`，而 `uri.host`
+    // 与 `uri.authority` **都是空串**——于是这里算出的 host 为空，最终
+    // `Socket.connect('', 443)` 直接失败（Windows: errno 1225 远程计算机拒绝
+    // 网络连接），WebView 经本地代理的所有 HTTPS 流量全灭。
+    // 唯一可靠的来源是 `Host` 头（CONNECT 请求必带完整 `host:port`），其次才是
+    // `requestedUri`/`uri` 的兼容分支。
+    final target = _parseConnectTarget(request, defaultPort);
+    final host = target.$1;
+    final port = target.$2;
+    try {
+      final addresses = await _resolveAddresses(host);
+      final targetSocket =
+          await _connectFirstReachable(host, port, addresses);
+      // 直接 detach：detachSocket(writeHeaders:true) 会把已设的 200 状态行写给
+      // 客户端。注意不能先 close() 再 detach —— 那样会抛 StateError（dart:io 已
+      // 接管 socket），导致 HTTPS 隧道建立失败。
+      request.response.statusCode = 200;
+      request.response.reasonPhrase = 'Connection Established';
+      request.response.headers.clear();
+      final clientSocket = await request.response.detachSocket();
+      _pipe(clientSocket, targetSocket);
+    } on Object catch (e) {
+      debugPrint('WebviewProxy tunnel($host:$port) failed: $e');
+      try {
+        request.response.statusCode = 502;
+        await request.response.close();
+      } on Object {
+        // 已 detached 或关闭，忽略。
+      }
+    }
+  }
+
+  /// 解析 CONNECT 目标为 `(host, port)`（纯函数，供单测直接覆盖）。
+  ///
+  /// CONNECT 的 request-line 与 `Host` 头在 dart:io 下会被拆到**不同字段**，
+  /// 因此这里独立收集 host 与 port（各自取最可靠来源后拼装），而不是指望
+  /// 单一字段同时给出两者。
+  @visibleForTesting
+  (String, int) debugParseConnectTarget(HttpRequest request, int defaultPort) =>
+      _parseConnectTarget(request, defaultPort);
+
+  (String, int) _parseConnectTarget(HttpRequest request, int defaultPort) {
+    var host = '';
+    int? port;
+
+    // host 与 port 各自独立收集（CONNECT 下不存在一个能同时给出两者的字段），
+    // 先到先得：靠前的来源更可信。
+    void takePair((String, int?) raw) {
+      if (host.isEmpty && raw.$1.isNotEmpty) host = raw.$1;
+      if (port == null && raw.$2 != null) port = raw.$2;
+    }
+
+    // ① Host 头：CONNECT 语义上必带目标权威，host 部分永远最可信（实测 dart:io
+    //    下也是唯一同时可靠的通道——uri.host / uri.port / uri.authority 全空）。
+    takePair(_splitHostPort(request.headers.value(HttpHeaders.hostHeader)));
+
+    // ② 请求行。dart:io 的 CONNECT 解析是坏的（见 debugParseConnectTarget 上的
+    //    实测记录）：`CONNECT host:port` → scheme=host、path=port；`CONNECT host`
+    //    → scheme 空、path=host。所以这两处都按「可能是 host、也可能是 port」
+    //    双向试探，由 _splitHostPort 的形状判定决定各自归属。
+    final line = request.uri;
+    if (line.scheme != 'http' && line.scheme != 'https') {
+      takePair(_splitHostPort(line.scheme));
+      takePair(_splitHostPort(line.authority));
+    }
+    // path：`443`（仅端口）或 `host:port`；去掉前导斜杠后仍含 `/` 的路径段不是
+    // 目标权威，直接跳过。
+    final path = line.path.startsWith('/') ? line.path.substring(1) : line.path;
+    if (path.isNotEmpty && !path.contains('/')) {
+      takePair(_splitHostPort(path));
+    }
+
+    // ③ requestedUri：**CONNECT 下一律不采信**。实测 `CONNECT plain.test`（请求行
+    //    不带端口）时 dart:io 会合成 `http://plain.testplain.test` 并把 port 报成
+    //    80 —— 主机名被拼了两遍、端口是凭空出现的。采信它会把隧道指向 80 端口。
+    //    隧道目标的权威信息在请求行 + Host 头里已经完整，无需第三来源。
+
+    return (host, port ?? defaultPort);
+  }
+
+  @visibleForTesting
+  static (String, int) debugSplitHostPort(String? raw, int defaultPort) {
+    final r = _splitHostPort(raw);
+    return (r.$1, r.$2 ?? defaultPort);
+  }
+
+  /// 把 `host[:port]`（或纯端口串）拆成 `(host, port?)`；port 为 null 表示
+  /// 原文未给出端口（调用方按来源优先级合并时用 null 表示「未指定」）。
+  ///
+  /// 兼容 IPv6 字面量 `[::1]:443`。整段是数字（`443`）时视作「无 host、只有
+  /// 端口」，返回 `('', 443)`，让调用方继续从别的来源取 host。
+  static (String, int?) _splitHostPort(String? raw) {
+    final s = (raw ?? '').trim();
+    if (s.isEmpty) return ('', null);
+    // IPv6 字面量。
+    if (s.startsWith('[')) {
+      final end = s.indexOf(']');
+      if (end > 0) {
+        final h = s.substring(1, end);
+        final rest = s.substring(end + 1);
+        return (h, rest.startsWith(':') ? _portOrNull(rest.substring(1)) : null);
+      }
+    }
+    final colon = s.lastIndexOf(':');
+    if (colon < 0) {
+      // 无端口：可能是 host，也可能只剩一个端口号（dart:io 只留下 `443`）。
+      final asPort = _portOrNull(s);
+      if (asPort != null) return ('', asPort);
+      return (s, null);
+    }
+    return (s.substring(0, colon).trim(), _portOrNull(s.substring(colon + 1)));
+  }
+
+  /// 解析端口号；非法或越界返回 null（`null` 语义 = 未指定，不是 0）。
+  static int? _portOrNull(String raw) {
+    final v = int.tryParse(raw.trim());
+    if (v == null || v <= 0 || v > 65535) return null;
+    return v;
+  }
+
+  /// 明文 HTTP 代理：重写请求行到解析后的 IP，双向透传原始字节。
+  Future<void> _forward(HttpRequest request) async {
+    final uri = request.uri;
+    final host = uri.host;
+    final port = uri.port == 0 ? 80 : uri.port;
+    try {
+      final addresses = await _resolveAddresses(host);
+      final targetSocket =
+          await _connectFirstReachable(host, port, addresses);
+      // 重写请求行为绝对路径（去掉 scheme+host），Host 头保留原域名（SNI 等价）。
+      final path = uri.path.isEmpty ? '/' : uri.path;
+      final raw = StringBuffer()
+        ..write('${request.method} $path${uri.query.isNotEmpty ? '?${uri.query}' : ''} ${request.protocolVersion}\r\n');
+      request.headers.forEach((name, values) {
+        for (final v in values) raw.writeln('$name: $v');
+      });
+      raw.writeln();
+      targetSocket.add(utf8.encode(raw.toString()));
+      final clientSocket = await request.response.detachSocket(writeHeaders: false);
+      _pipe(clientSocket, targetSocket);
+    } on Object catch (e) {
+      debugPrint('WebviewProxy forward($host:$port) failed: $e');
+      try {
+        request.response.statusCode = 502;
+        await request.response.close();
+      } on Object {
+        // 忽略。
+      }
+    }
+  }
+
+  Future<List<InternetAddress>> _resolveAddresses(String host) async {
+    final addresses = await DnsResolver.instance.resolve(
+      host,
+      _dns ?? DnsConfig(),
+      _hosts ?? <HostsEntry>[],
+    );
+    if (addresses.isEmpty) {
+      throw StateError('no address for $host');
+    }
+    // IPv4 优先（Cloudflare anycast 多为 IPv4）；DnsResolver 对 hosts 命中的
+    // 多候选只做了打乱，未做 v4/v6 分组，这里补齐次序。
+    final v4 = addresses
+        .where((a) => a.type == InternetAddressType.IPv4)
+        .toList(growable: false);
+    if (v4.isEmpty || v4.length == addresses.length) return addresses;
+    return <InternetAddress>[
+      ...v4,
+      ...addresses.where((a) => a.type != InternetAddressType.IPv4),
+    ];
+  }
+
+  /// 逐个候选地址尝试建连，直到成功；全部失败回退系统解析原域名直连。
+  ///
+  /// 与 [NetworkClientBuilder._connectFirstReachable] 同语义（hosts/DNS 常给
+  /// 出多个候选 IP，其中部分不可达，只连第一个会整体超时）。单次尝试限时
+  /// 8s：被防火墙静默丢弃的地址 TCP 会一直挂起，不限时则隧道永久无响应。
+  Future<Socket> _connectFirstReachable(
+    String host,
+    int port,
+    List<InternetAddress> addresses,
+  ) async {
+    Object? lastErr;
+    for (final addr in addresses) {
+      try {
+        return await Socket.connect(addr, port).timeout(
+              const Duration(seconds: 8),
+              onTimeout: () => throw TimeoutException('connect $addr'),
+            );
+      } on Object catch (e) {
+        lastErr = e;
+      }
+    }
+    try {
+      return await Socket.connect(host, port).timeout(
+            const Duration(seconds: 8),
+            onTimeout: () => throw TimeoutException('connect $host'),
+          );
+    } on Object catch (e) {
+      throw lastErr ?? e;
+    }
+  }
+
+  /// 把 [a] 的字节泵到 [b]，反向同理。
+  ///
+  /// 转发必须容忍任一端的提前关闭：WebView2 在拿到完整响应后会立刻关闭
+  /// 隧道，此时我们这侧仍在把残余字节写进已死的 socket，写操作抛
+  /// `SocketException: Write failed ... errno = 10053`（WSAECONNABORTED）。
+  /// 这类异常是**正常的拆除竞态**，不是故障——不吞掉就会冒成
+  /// `未捕获异常 / Uncaught zone error`，而 WebView 侧其实已经拿到内容。
+  void _pipe(Socket a, Socket b) {
+    a.listen(
+      (d) => _safeAdd(b, d),
+      onDone: () {
+        try {
+          b.close();
+        } on Object {
+          // 忽略。
+        }
+      },
+      onError: (_) {
+        try {
+          b.close();
+        } on Object {
+          // 忽略。
+        }
+      },
+      cancelOnError: true,
+    );
+    b.listen(
+      (d) => _safeAdd(a, d),
+      onDone: () {
+        try {
+          a.close();
+        } on Object {
+          // 忽略。
+        }
+      },
+      onError: (_) {
+        try {
+          a.close();
+        } on Object {
+          // 忽略。
+        }
+      },
+      cancelOnError: true,
+    );
+  }
+
+  /// 向已关闭/已中断的 socket 写入会抛 [SocketException]；
+  /// 对端先关是隧道拆除的正常路径，静默丢弃即可。
+  static void _safeAdd(Socket target, List<int> data) {
+    try {
+      target.add(data);
+    } on Object {
+      // 对端已关闭：本次转发作废，等待 onDone/onError 收尾。
+    }
+  }
+
+  // ---- 平台代理覆盖（Android 通道 / 鸿蒙插件 ProxyController）----
+
+  /// 鸿蒙代理设置：全部 scheme 走 [proxyUrl]，回环地址直连。
+  ///
+  /// 与 Android 一致只给一条全量规则——ArkWeb 的 ProxyConfig 同样不支持
+  /// PAC/域名分流；hosts/DoH 的按域解析由本地正向代理完成。
+  static ProxySettings _ohosProxySettings(String proxyUrl) => ProxySettings(
+        proxyRules: <ProxyRule>[ProxyRule(url: proxyUrl)],
+        bypassRules: const <String>['localhost', '127.0.0.1'],
+      );
+
+  Future<bool> _setProxy({String? pacUrl, String? proxyUrl}) async {
+    if (PlatformService.instance.isOHOS) return _setOhosProxy(proxyUrl);
+    try {
+      final r = await _channel.invokeMethod<bool>('setProxyOverride', <String, dynamic>{
+        if (pacUrl != null) 'pacUrl': pacUrl,
+        if (proxyUrl != null) 'proxyUrl': proxyUrl,
+      });
+      return r == true;
+    } on Object catch (e) {
+      // 非 Android（如 Windows / 桌面）未注册 wxyy/webview_proxy handler，
+      // invokeMethod 抛 MissingPluginException——必须兜底，否则异常会冲出
+      // applyForSource 阻断验证界面打开。网络跟随是 best-effort，失败即回落。
+      debugPrint('WebviewProxy setProxyOverride failed: $e');
+      return false;
+    }
+  }
+
+  /// 鸿蒙：经 flutter_inappwebview_ohos 的 ProxyController 下发 ArkWeb 覆盖。
+  ///
+  /// 插件通道在目标 SDK（API 15+）不可用 / 引擎未就绪时抛错；网络跟随是
+  /// best-effort，失败返回 false 由调用方回落到 WebView2 分支（鸿蒙上必空）。
+  Future<bool> _setOhosProxy(String? proxyUrl) async {
+    if (proxyUrl == null || proxyUrl.isEmpty) return false;
+    try {
+      await ProxyController.instance().setProxyOverride(
+        settings: _ohosProxySettings(proxyUrl),
+      );
+      debugPrint('WebviewProxy(OHOS) applied rule=$proxyUrl');
+      return true;
+    } on Object catch (e) {
+      debugPrint('WebviewProxy(OHOS) setProxyOverride failed: $e');
+      return false;
+    }
+  }
+
+  Future<void> _clearProxy() async {
+    if (PlatformService.instance.isOHOS) {
+      try {
+        await ProxyController.instance().clearProxyOverride();
+      } on Object catch (e) {
+        debugPrint('WebviewProxy(OHOS) clearProxyOverride failed: $e');
+      }
+      return;
+    }
+    try {
+      await _channel.invokeMethod<void>('clearProxyOverride');
+    } on Object catch (e) {
+      debugPrint('WebviewProxy clearProxyOverride failed: $e');
+    }
+  }
+}

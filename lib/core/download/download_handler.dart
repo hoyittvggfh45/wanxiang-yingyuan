@@ -1,0 +1,137 @@
+/// 下载处理器抽象（文档）。
+///
+/// 每种源类型（漫画 / 小说 / 媒体）有自己的处理器，
+/// 负责拉取内容、打包、写入本地文件，并报告进度。
+library;
+
+import 'dart:async' show Timer;
+
+import 'download_task.dart';
+
+/// 处理器进度回调：已完成章节数、总章节数、当前章节内部进度（0.0~1.0）。
+typedef DownloadProgressCallback = void Function(
+    int downloadedChapters, int totalChapters, double chapterProgress);
+
+/// 取消检查回调：返回 true 表示用户已取消该下载任务。
+///
+/// 处理器应在每章/每集处理前调用，命中取消时抛出 [DownloadCancelledException]
+/// 中止后续工作，使「下载进行中取消」真正停下网络与写盘（修复 132）。
+typedef DownloadCancelledCheck = bool Function();
+
+/// 用户取消下载时由处理器抛出，[DownloadManager] 捕获后清理半成品
+/// 且不标记 completed / 不写 meta.json（避免取消后内容仍在写盘、
+/// 重启后孤儿恢复再次出现）。
+class DownloadCancelledException implements Exception {
+  const DownloadCancelledException();
+
+  @override
+  String toString() => '下载已取消';
+}
+
+/// 下载结果：作品目录 + 逐章/逐集文件路径。
+///
+/// 引入"作品目录"概念：每部作品一个文件夹，内部每话/每集一个文件，
+/// 取代原先"按任务 id 平铺/单文件"的落盘方式，使同部作品多批下载聚合进同一目录，
+/// 且阅读器可凭 [chapterFilePaths] 按话/集打开与切换。
+class DownloadResult {
+  /// 作品目录（视频/漫画）或整本单文件（小说）。
+  ///
+  /// - 视频/漫画：目录路径；
+  /// - 小说：整本 `.epub`/`.txt` 文件路径（沿用原 `localPath` 语义）。
+  final String workPath;
+
+  /// 逐章/逐集文件绝对路径（与章节标题一一对应）。
+  ///
+  /// 视频：`workPath/NNN.mp4` 或 `NNN.ts`；漫画 cbz：`workPath/NNN.cbz`、
+  /// folder：`workPath/NNN/`；小说为整本单文件（即 [workPath]，列表仅含一个元素）。
+  final List<String> chapterFilePaths;
+
+  const DownloadResult({
+    required this.workPath,
+    required this.chapterFilePaths,
+  });
+}
+
+/// 下载处理器接口。
+abstract class DownloadHandler {
+  /// 执行下载。
+  ///
+  /// [task] 任务元数据（其中 [DownloadTask.localPath] 在此约定为"作品目录"，
+  /// 处理器负责在其下按章/集落盘）；[onProgress] 每完成一个章节/分片时调用；
+  /// [isCancelled] 每次开始新章节/分片前检查，命中则抛出
+  /// [DownloadCancelledException] 中止（供「下载进行中取消」使用）。
+  /// 返回 [DownloadResult]。
+  Future<DownloadResult> download(
+    DownloadTask task, {
+    DownloadProgressCallback? onProgress,
+    DownloadCancelledCheck? isCancelled,
+  });
+}
+
+/// 有界并发池：最多 [concurrency] 个任务并行执行，全部完成后返回。
+///
+/// 每个任务完成后调用 [onItemDone]（已完成任务数，总任务数），
+/// 适用于以「单元（图片 / 章节）」为粒度的并行拉取——配合按索引写入，
+/// 即可在并行执行下依然保持结果有序。
+Future<void> runPool<T>(
+  int concurrency,
+  List<T> items,
+  Future<void> Function(T) task, {
+  void Function(int completed, int total)? onItemDone,
+}) async {
+  if (concurrency < 1) concurrency = 1;
+  if (items.isEmpty) return;
+  final queue = List<T>.from(items);
+  var completed = 0;
+  Future<void> worker() async {
+    while (queue.isNotEmpty) {
+      final item = queue.removeLast();
+      await task(item);
+      completed++;
+      onItemDone?.call(completed, items.length);
+    }
+  }
+
+  final count = concurrency < items.length ? concurrency : items.length;
+  final workers = <Future<void>>[for (var i = 0; i < count; i++) worker()];
+  await Future.wait(workers);
+}
+
+/// 把整任务级总进度（0.0~1.0）编码进处理器进度回调三元组。
+///
+/// Manager 侧进度公式为 `(downloadedChapters + chapterProgress) / totalChapters`。
+/// 多阶段流程（嗅探→下载 / 抓取→写盘）各自只占总进度的一段区间时，
+/// 用本函数按真实章节数换算：进度单调递增不回跳，`downloadedChapters`
+/// 也随总进度自然增长（不会在阶段切换时清零回跳）。
+void reportOverallProgress(
+  DownloadProgressCallback? onProgress,
+  double fraction,
+  int totalChapters,
+) {
+  if (onProgress == null) return;
+  final scaled = (fraction.clamp(0.0, 1.0)) * totalChapters;
+  final done = scaled.floor();
+  onProgress(done, totalChapters, scaled - done);
+}
+
+/// 黑盒阶段进度估计：在 [phase] 执行期间按渐近曲线周期上报估计值。
+///
+/// 地址嗅探（无界面 WebView）/ 单章正文抓取（一次原子请求）这类阶段没有
+/// 可上报的真实进度——单集/单章任务会在 0% 停留整个阶段、完成瞬间跳 100%。
+/// 曲线 `cap * t/(t+1)`（t 为已耗时/半衰期）保证进度持续增加又不会虚假封顶：
+/// 约一个半衰期到区间一半，三个半衰期到 3/4，渐近逼近 [cap]。
+/// [phase] 结束（含异常/取消）后定时器必然取消，由调用方以真实进度接管。
+Future<T> estimateOpaqueProgress<T>(
+  Future<T> Function() phase, {
+  required void Function(double value) onValue,
+  Duration halfTime = const Duration(seconds: 2),
+  Duration tick = const Duration(milliseconds: 150),
+}) {
+  const cap = 0.95;
+  final watch = Stopwatch()..start();
+  final timer = Timer.periodic(tick, (_) {
+    final t = watch.elapsedMilliseconds / halfTime.inMilliseconds;
+    onValue(cap * t / (t + 1));
+  });
+  return phase().whenComplete(timer.cancel);
+}

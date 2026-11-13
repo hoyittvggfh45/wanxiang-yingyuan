@@ -1,0 +1,475 @@
+{
+  "id": "manga_baozimh",
+  "ageRating": "general",
+  "name": "Bun漫畫",
+  "type": "mangaSource",
+  "version": 6,
+  "author": "plexhub",
+  "description": "Bun漫畫（www.baozimh.com）在線漫畫源，支持韓漫、國漫、日漫、歐美等分類，圖片經 v2.apikk.top 接口加密後客戶端解密渲染。",
+  "enabled": true,
+  "enabledExplore": true,
+  "site": {
+    "domain": "www.baozimh.com",
+    "baseUrl": "https://www.baozimh.com",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36",
+    "mirrors": [
+      {
+        "name": "baozimh.org",
+        "domain": "baozimh.org",
+        "baseUrl": "https://baozimh.org"
+      },
+      {
+        "name": "godamh.com",
+        "domain": "godamh.com",
+        "baseUrl": "https://godamh.com"
+      },
+      {
+        "name": "m.baozimh.one",
+        "domain": "m.baozimh.one",
+        "baseUrl": "https://m.baozimh.one"
+      },
+      {
+        "name": "bzmh.org",
+        "domain": "bzmh.org",
+        "baseUrl": "https://bzmh.org"
+      },
+      {
+        "name": "g-mh.org",
+        "domain": "g-mh.org",
+        "baseUrl": "https://g-mh.org"
+      },
+      {
+        "name": "m.g-mh.org",
+        "domain": "m.g-mh.org",
+        "baseUrl": "https://m.g-mh.org"
+      }
+    ]
+  },
+  "responseType": "html",
+  "useWebview": true,
+  "stealthMode": true,
+  "webviewConfig": {
+    "timeout": 30000,
+    "adBlocker": true,
+    "useLegacyParser": false,
+    "skipSSLVerification": true,
+    "extraUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36"
+  },
+  "parser": {
+    "type": "hybrid",
+    "overrides": {
+      "latest": {
+        "type": "script",
+        "function": "parseList",
+        "script": "function parseList(html, context) {\n  var ctx = context || {};\n  var baseUrl = (ctx.baseUrl || 'https://www.baozimh.com').replace(/\\/$/, '');\n  var listHtml = (typeof html === 'string') ? html : '';\n  try { if (ctx.log) ctx.log('parseList: htmlLen=' + listHtml.length); } catch(e){}\n  var results = [];\n  if (!listHtml || listHtml.length < 50) return results;\n  var seen = {};\n  var aRe = /<a\\s+([^>]*)>([\\s\\S]*?)<\\/a>/gi;\n  var m;\n  while ((m = aRe.exec(listHtml)) !== null) {\n    var attrs = m[1];\n    var block = m[2];\n    var hm = attrs.match(/href=\"([^\"]+)\"/i);\n    if (!hm) continue;\n    var href = hm[1];\n    if (href.indexOf('/manga/') !== 0) continue;\n    if (seen[href]) continue;\n    var imgM = block.match(/<img[^>]*\\bsrc=\"([^\"]+)\"[^>]*>/i) || block.match(/<img[^>]*\\bdata-src=\"([^\"]+)\"[^>]*>/i);\n    var titleM = block.match(/<h3[^>]*>([\\s\\S]*?)<\\/h3>/i);\n    if (!imgM || !titleM) continue;\n    var stripTags = function(s){ return s.replace(/<[^>]+>/g, '').replace(/\\s+/g, ' ').trim(); };\n    var title = stripTags(titleM[1]);\n    if (!title) continue;\n    var cover = imgM[1];\n    if (cover.indexOf('/') === 0) cover = baseUrl + cover;\n    seen[href] = 1;\n    var slug = href.replace(/^\\/manga\\//, '');\n    results.push({ id: slug, title: title, cover: cover, detailUrl: baseUrl + href });\n  }\n  try { if (ctx.log) ctx.log('parseList: found=' + results.length); } catch(e){}\n  return results;\n}"
+      },
+      "explore": {
+        "type": "script",
+        "function": "parseList",
+        "script": "function parseList(html, context) {\n  var ctx = context || {};\n  var baseUrl = (ctx.baseUrl || 'https://www.baozimh.com').replace(/\\/$/, '');\n  var listHtml = (typeof html === 'string') ? html : '';\n  try { if (ctx.log) ctx.log('parseList: htmlLen=' + listHtml.length); } catch(e){}\n  var results = [];\n  if (!listHtml || listHtml.length < 50) return results;\n  var seen = {};\n  var aRe = /<a\\s+([^>]*)>([\\s\\S]*?)<\\/a>/gi;\n  var m;\n  while ((m = aRe.exec(listHtml)) !== null) {\n    var attrs = m[1];\n    var block = m[2];\n    var hm = attrs.match(/href=\"([^\"]+)\"/i);\n    if (!hm) continue;\n    var href = hm[1];\n    if (href.indexOf('/manga/') !== 0) continue;\n    if (seen[href]) continue;\n    var imgM = block.match(/<img[^>]*\\bsrc=\"([^\"]+)\"[^>]*>/i) || block.match(/<img[^>]*\\bdata-src=\"([^\"]+)\"[^>]*>/i);\n    var titleM = block.match(/<h3[^>]*>([\\s\\S]*?)<\\/h3>/i);\n    if (!imgM || !titleM) continue;\n    var stripTags = function(s){ return s.replace(/<[^>]+>/g, '').replace(/\\s+/g, ' ').trim(); };\n    var title = stripTags(titleM[1]);\n    if (!title) continue;\n    var cover = imgM[1];\n    if (cover.indexOf('/') === 0) cover = baseUrl + cover;\n    seen[href] = 1;\n    var slug = href.replace(/^\\/manga\\//, '');\n    results.push({ id: slug, title: title, cover: cover, detailUrl: baseUrl + href });\n  }\n  try { if (ctx.log) ctx.log('parseList: found=' + results.length); } catch(e){}\n  return results;\n}"
+      },
+      "category": {
+        "type": "script",
+        "function": "parseList",
+        "script": "function parseList(html, context) {\n  var ctx = context || {};\n  var baseUrl = (ctx.baseUrl || 'https://www.baozimh.com').replace(/\\/$/, '');\n  var listHtml = (typeof html === 'string') ? html : '';\n  try { if (ctx.log) ctx.log('parseList: htmlLen=' + listHtml.length); } catch(e){}\n  var results = [];\n  if (!listHtml || listHtml.length < 50) return results;\n  var seen = {};\n  var aRe = /<a\\s+([^>]*)>([\\s\\S]*?)<\\/a>/gi;\n  var m;\n  while ((m = aRe.exec(listHtml)) !== null) {\n    var attrs = m[1];\n    var block = m[2];\n    var hm = attrs.match(/href=\"([^\"]+)\"/i);\n    if (!hm) continue;\n    var href = hm[1];\n    if (href.indexOf('/manga/') !== 0) continue;\n    if (seen[href]) continue;\n    var imgM = block.match(/<img[^>]*\\bsrc=\"([^\"]+)\"[^>]*>/i) || block.match(/<img[^>]*\\bdata-src=\"([^\"]+)\"[^>]*>/i);\n    var titleM = block.match(/<h3[^>]*>([\\s\\S]*?)<\\/h3>/i);\n    if (!imgM || !titleM) continue;\n    var stripTags = function(s){ return s.replace(/<[^>]+>/g, '').replace(/\\s+/g, ' ').trim(); };\n    var title = stripTags(titleM[1]);\n    if (!title) continue;\n    var cover = imgM[1];\n    if (cover.indexOf('/') === 0) cover = baseUrl + cover;\n    seen[href] = 1;\n    var slug = href.replace(/^\\/manga\\//, '');\n    results.push({ id: slug, title: title, cover: cover, detailUrl: baseUrl + href });\n  }\n  try { if (ctx.log) ctx.log('parseList: found=' + results.length); } catch(e){}\n  return results;\n}"
+      },
+      "search": {
+        "type": "script",
+        "function": "parseList",
+        "script": "function parseList(html, context) {\n  var ctx = context || {};\n  var baseUrl = (ctx.baseUrl || 'https://www.baozimh.com').replace(/\\/$/, '');\n  var listHtml = (typeof html === 'string') ? html : '';\n  try { if (ctx.log) ctx.log('parseList: htmlLen=' + listHtml.length); } catch(e){}\n  var results = [];\n  if (!listHtml || listHtml.length < 50) return results;\n  var seen = {};\n  var aRe = /<a\\s+([^>]*)>([\\s\\S]*?)<\\/a>/gi;\n  var m;\n  while ((m = aRe.exec(listHtml)) !== null) {\n    var attrs = m[1];\n    var block = m[2];\n    var hm = attrs.match(/href=\"([^\"]+)\"/i);\n    if (!hm) continue;\n    var href = hm[1];\n    if (href.indexOf('/manga/') !== 0) continue;\n    if (seen[href]) continue;\n    var imgM = block.match(/<img[^>]*\\bsrc=\"([^\"]+)\"[^>]*>/i) || block.match(/<img[^>]*\\bdata-src=\"([^\"]+)\"[^>]*>/i);\n    var titleM = block.match(/<h3[^>]*>([\\s\\S]*?)<\\/h3>/i);\n    if (!imgM || !titleM) continue;\n    var stripTags = function(s){ return s.replace(/<[^>]+>/g, '').replace(/\\s+/g, ' ').trim(); };\n    var title = stripTags(titleM[1]);\n    if (!title) continue;\n    var cover = imgM[1];\n    if (cover.indexOf('/') === 0) cover = baseUrl + cover;\n    seen[href] = 1;\n    var slug = href.replace(/^\\/manga\\//, '');\n    results.push({ id: slug, title: title, cover: cover, detailUrl: baseUrl + href });\n  }\n  try { if (ctx.log) ctx.log('parseList: found=' + results.length); } catch(e){}\n  return results;\n}"
+      },
+      "tagSearch": {
+        "type": "script",
+        "function": "parseList",
+        "script": "function parseList(html, context) {\n  var ctx = context || {};\n  var baseUrl = (ctx.baseUrl || 'https://www.baozimh.com').replace(/\\/$/, '');\n  var listHtml = (typeof html === 'string') ? html : '';\n  try { if (ctx.log) ctx.log('parseList: htmlLen=' + listHtml.length); } catch(e){}\n  var results = [];\n  if (!listHtml || listHtml.length < 50) return results;\n  var seen = {};\n  var aRe = /<a\\s+([^>]*)>([\\s\\S]*?)<\\/a>/gi;\n  var m;\n  while ((m = aRe.exec(listHtml)) !== null) {\n    var attrs = m[1];\n    var block = m[2];\n    var hm = attrs.match(/href=\"([^\"]+)\"/i);\n    if (!hm) continue;\n    var href = hm[1];\n    if (href.indexOf('/manga/') !== 0) continue;\n    if (seen[href]) continue;\n    var imgM = block.match(/<img[^>]*\\bsrc=\"([^\"]+)\"[^>]*>/i) || block.match(/<img[^>]*\\bdata-src=\"([^\"]+)\"[^>]*>/i);\n    var titleM = block.match(/<h3[^>]*>([\\s\\S]*?)<\\/h3>/i);\n    if (!imgM || !titleM) continue;\n    var stripTags = function(s){ return s.replace(/<[^>]+>/g, '').replace(/\\s+/g, ' ').trim(); };\n    var title = stripTags(titleM[1]);\n    if (!title) continue;\n    var cover = imgM[1];\n    if (cover.indexOf('/') === 0) cover = baseUrl + cover;\n    seen[href] = 1;\n    var slug = href.replace(/^\\/manga\\//, '');\n    results.push({ id: slug, title: title, cover: cover, detailUrl: baseUrl + href });\n  }\n  try { if (ctx.log) ctx.log('parseList: found=' + results.length); } catch(e){}\n  return results;\n}"
+      },
+      "authorSearch": {
+        "type": "script",
+        "function": "parseList",
+        "script": "function parseList(html, context) {\n  var ctx = context || {};\n  var baseUrl = (ctx.baseUrl || 'https://www.baozimh.com').replace(/\\/$/, '');\n  var listHtml = (typeof html === 'string') ? html : '';\n  try { if (ctx.log) ctx.log('parseList: htmlLen=' + listHtml.length); } catch(e){}\n  var results = [];\n  if (!listHtml || listHtml.length < 50) return results;\n  var seen = {};\n  var aRe = /<a\\s+([^>]*)>([\\s\\S]*?)<\\/a>/gi;\n  var m;\n  while ((m = aRe.exec(listHtml)) !== null) {\n    var attrs = m[1];\n    var block = m[2];\n    var hm = attrs.match(/href=\"([^\"]+)\"/i);\n    if (!hm) continue;\n    var href = hm[1];\n    if (href.indexOf('/manga/') !== 0) continue;\n    if (seen[href]) continue;\n    var imgM = block.match(/<img[^>]*\\bsrc=\"([^\"]+)\"[^>]*>/i) || block.match(/<img[^>]*\\bdata-src=\"([^\"]+)\"[^>]*>/i);\n    var titleM = block.match(/<h3[^>]*>([\\s\\S]*?)<\\/h3>/i);\n    if (!imgM || !titleM) continue;\n    var stripTags = function(s){ return s.replace(/<[^>]+>/g, '').replace(/\\s+/g, ' ').trim(); };\n    var title = stripTags(titleM[1]);\n    if (!title) continue;\n    var cover = imgM[1];\n    if (cover.indexOf('/') === 0) cover = baseUrl + cover;\n    seen[href] = 1;\n    var slug = href.replace(/^\\/manga\\//, '');\n    results.push({ id: slug, title: title, cover: cover, detailUrl: baseUrl + href });\n  }\n  try { if (ctx.log) ctx.log('parseList: found=' + results.length); } catch(e){}\n  return results;\n}"
+      },
+      "detail": {
+        "type": "script",
+        "function": "parseDetail",
+        "script": "function parseDetail(html, context) {\n  var ctx = context || {};\n  var baseUrl = (ctx.baseUrl || 'https://www.baozimh.com').replace(/\\/$/, '');\n  if (typeof html !== 'string') html = '';\n  var stripTags = function(s) { return s.replace(/<[^>]+>/g, '').replace(/\\s+/g, ' ').trim(); };\n  var title = '';\n  var titleMatch = html.match(/<h1[^>]*>([\\s\\S]*?)<\\/h1>/i);\n  if (titleMatch) title = stripTags(titleMatch[1]);\n  title = title.replace(/(連載中|已完結|完結|連載)\\s*$/, '').trim();\n  var cover = '';\n  var coverMatch = html.match(/<img[^>]+id=[\"']MangaCard[\"'][^>]*(?:src|data-src)=[\"']([^\"']+)[\"']/i);\n  if (!coverMatch) coverMatch = html.match(/<img[^>]+(?:src|data-src)=[\"']([^\"']+)[\"'][^>]*id=[\"']MangaCard[\"']/i);\n  if (!coverMatch) {\n    var cardMatch = html.match(/<div[^>]+id=[\"']MangaCard[\"'][^>]*>([\\s\\S]*?)<\\/div>/i);\n    if (cardMatch) {\n      var imgMatch = cardMatch[1].match(/<img[^>]+(?:src|data-src)=[\"']([^\"']+)[\"']/i);\n      if (imgMatch) cover = imgMatch[1];\n    }\n  }\n  if (coverMatch) cover = coverMatch[1];\n  if (cover && cover.indexOf('/') === 0) cover = baseUrl + cover;\n  var description = '';\n  var descMatch = html.match(/<p[^>]+class=[\"'][^\"']*line-clamp-4[^\"']*[\"'][^>]*>([\\s\\S]*?)<\\/p>/i);\n  if (!descMatch) descMatch = html.match(/<p[^>]+class=[\"'][^\"']*text-sm[^\"']*text-foreground[^\"']*[\"'][^>]*>([\\s\\S]*?)<\\/p>/i);\n  if (!descMatch) {\n    var firstP = html.match(/<p[^>]*>([\\s\\S]*?)<\\/p>/i);\n    if (firstP) description = stripTags(firstP[1]);\n  }\n  if (descMatch) description = stripTags(descMatch[1]);\n  var author = '';\n  var authorUrl = '';\n  var authorMatch = html.match(/<a[^>]+href=[\"'](\\/manga-author\\/[^\"']+)[\"'][^>]*>([\\s\\S]*?)<\\/a>/i);\n  if (authorMatch) {\n    var aHref = authorMatch[1];\n    if (aHref.indexOf('/') === 0) aHref = baseUrl + aHref;\n    author = stripTags(authorMatch[2]);\n    authorUrl = aHref;\n  }\n  var tags = [];\n  var tagUrls = [];\n  var tagRe = /<a[^>]+href=[\"'](\\/manga-genre\\/[^\"']+)[\"'][^>]*>([\\s\\S]*?)<\\/a>/gi;\n  var tm;\n  while ((tm = tagRe.exec(html)) !== null) {\n    var tHref = tm[1];\n    if (tHref.indexOf('/') === 0) tHref = baseUrl + tHref;\n    var t = stripTags(tm[2]);\n    if (t && tags.indexOf(t) === -1) { tags.push(t); tagUrls.push(tHref); }\n  }\n  var tagRe2 = /<a[^>]+href=[\"'](\\/manga-tag\\/[^\"']+)[\"'][^>]*>([\\s\\S]*?)<\\/a>/gi;\n  while ((tm = tagRe2.exec(html)) !== null) {\n    var t2Href = tm[1];\n    if (t2Href.indexOf('/') === 0) t2Href = baseUrl + t2Href;\n    var t2 = stripTags(tm[2]);\n    if (t2 && tags.indexOf(t2) === -1) { tags.push(t2); tagUrls.push(t2Href); }\n  }\n  var status = '';\n  var sm = html.match(/(連載中|已完結|完結)/);\n  if (sm) status = sm[1];\n  var updatedAt = '';\n  var uaRe = /(?:更新时间|更新於|更新于|最[后後]更新|更新)[：:]?\\s*(\\d{4}[-/]\\d{1,2}[-/]\\d{1,2}(?:\\s+\\d{1,2}:\\d{1,2}(?::\\d{1,2})?)?)/i;\n  var uaM = html.match(uaRe);\n  if (uaM) updatedAt = uaM[1].trim();\n  var mid = '';\n  var midMatch = html.match(/data-mid=[\"'](\\d+)[\"']/i);\n  if (midMatch) mid = midMatch[1];\n  var detailUrl = ctx.url || (baseUrl + '/manga/' + (ctx.id || ''));\n  return {\n    id: ctx.id || '',\n    title: title,\n    cover: cover,\n    detailUrl: detailUrl,\n    description: description,\n    author: author,\n    authorUrl: authorUrl,\n    tags: tags,\n    tagUrls: tagUrls,\n    status: status,\n    updatedAt: updatedAt,\n    mid: mid\n  };\n}"
+      },
+      "chapters": {
+        "type": "script",
+        "function": "parseChapters",
+        "script": "function parseChapters(html, context) {\n  var ctx = context || {};\n  var baseUrl = (ctx.baseUrl || 'https://www.baozimh.com').replace(/\\/$/, '');\n  var mid = '';\n  var midMatch = html.match(/data-mid=[\"'](\\d+)[\"']/i);\n  if (midMatch) mid = midMatch[1];\n  if (!mid) {\n    var mangaIdMatch = html.match(/id=[\"']mangachapters[\"'][^>]*data-mid=[\"'](\\d+)[\"']/i);\n    if (mangaIdMatch) mid = mangaIdMatch[1];\n  }\n  if (!mid) return [];\n  var apiUrl = 'https://v2.apikk.top/api/manga/get?mid=' + mid + '&mode=all&t=' + Date.now();\n  return { __meta: true, __fetchUrl: apiUrl, __processor: '__processChapters' };\n}\n\nfunction __processChapters(apiJson, context) {\n  var ctx = context || {};\n  var baseUrl = (ctx.baseUrl || 'https://www.baozimh.com').replace(/\\/$/, '');\n  var data = apiJson && apiJson.data;\n  if (!data || !data.chapters) return [];\n  var mid = data.id ? String(data.id) : '';\n  var results = [];\n  for (var i = 0; i < data.chapters.length; i++) {\n    var ch = data.chapters[i];\n    var cid = ch.id;\n    var attrs = ch.attributes || {};\n    var title = attrs.title ? attrs.title : '';\n    var updatedAtRaw = '';\n    if (attrs.updated_at) updatedAtRaw = attrs.updated_at;\n    else if (attrs.updatedAt) updatedAtRaw = attrs.updatedAt;\n    else if (ch.updated_at) updatedAtRaw = ch.updated_at;\n    else if (ch.updatedAt) updatedAtRaw = ch.updatedAt;\n    else if (ch.time) updatedAtRaw = ch.time;\n    else if (ch.date) updatedAtRaw = ch.date;\n    else if (ch.timestamp) updatedAtRaw = ch.timestamp;\n    var updatedAt = '';\n    if (updatedAtRaw) {\n      if (typeof updatedAtRaw === 'number') {\n        var ts = updatedAtRaw;\n        if (ts < 1000000000000) ts = ts * 1000;\n        updatedAt = new Date(ts).toISOString();\n      } else {\n        updatedAt = String(updatedAtRaw);\n      }\n    }\n    results.push({\n      id: mid + '@' + cid,\n      title: title,\n      url: baseUrl + '/manga/' + mid + '/' + cid,\n      updatedAt: updatedAt\n    });\n  }\n  return results;\n}"
+      },
+      "images": {
+        "type": "script",
+        "function": "parseImages",
+        "script": "function decodeImages(raw) {\n    var prefix = 'J7r';\n    var suffix = 'nQ';\n    var marker = 'kD';\n    var keyB = 'W4s';\n    var chunkSize = 7;\n    var src = '_-9876543210abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';\n    var dst = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';\n    if (!raw || typeof raw !== 'string' || raw.slice(0, prefix.length) !== prefix || raw.slice(-suffix.length) !== suffix) {\n      return null;\n    }\n    var body = raw.slice(prefix.length, -suffix.length);\n    var keyBLen = keyB.length;\n    var markerLen = marker.length;\n    var keyPos = body.indexOf(keyB);\n    if (keyPos < 0) return null;\n    var kdPositions = [];\n    var searchFrom = 0;\n    while (true) {\n      var p = body.indexOf(marker, searchFrom);\n      if (p < 0 || p >= keyPos) break;\n      kdPositions.push(p);\n      searchFrom = p + markerLen;\n    }\n    var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';\n    for (var idx = 0; idx < kdPositions.length; idx++) {\n      var kdPos = kdPositions[idx];\n      var cLen = keyPos - kdPos - markerLen;\n      if (cLen < 0) continue;\n      var tail = body.substr(keyPos + keyBLen);\n      var part1 = body.substr(0, kdPos);\n      var part3 = body.substr(kdPos + markerLen, cLen);\n      var combined = tail + part1 + part3;\n      var buf = '';\n      for (var i = 0; i < combined.length; i += chunkSize) {\n        var chunk = combined.substr(i, chunkSize);\n        if (((i / chunkSize) | 0) % 2 === 1) {\n          chunk = chunk.split('').reverse().join('');\n        }\n        buf += chunk;\n      }\n      var mapped = '';\n      for (var j = 0; j < buf.length; j++) {\n        var ch = buf[j];\n        var sidx = src.indexOf(ch);\n        mapped += sidx >= 0 ? dst[sidx] : ch;\n      }\n      var b64 = mapped.replace(/-/g, '+').replace(/_/g, '/');\n      var pad = (4 - b64.length % 4) % 4;\n      for (var p2 = 0; p2 < pad; p2++) b64 += '=';\n      try {\n        var out = '';\n        for (var k = 0; k < b64.length; k += 4) {\n          var e1 = chars.indexOf(b64.charAt(k));\n          var e2 = chars.indexOf(b64.charAt(k + 1));\n          var e3 = chars.indexOf(b64.charAt(k + 2));\n          var e4 = chars.indexOf(b64.charAt(k + 3));\n          out += String.fromCharCode((e1 << 2) | (e2 >> 4));\n          if (e3 !== 64) out += String.fromCharCode(((e2 & 15) << 4) | (e3 >> 2));\n          if (e4 !== 64) out += String.fromCharCode(((e3 & 3) << 6) | e4);\n        }\n        try { out = decodeURIComponent(escape(out)); } catch (e2) {}\n        var parsed = JSON.parse(out);\n        if (parsed && Array.isArray(parsed) && parsed.length > 0 && parsed[0] && parsed[0].url) {\n          return parsed;\n        }\n      } catch (e) {\n      }\n    }\n    return null;\n  }\n\n\n  function _extractImageUrls(dataObj) {\n    if (!dataObj || !dataObj.info || !dataObj.info.images) return [];\n    var raw = dataObj.info.images.images;\n    var images = null;\n    if (typeof raw === 'string') {\n      images = decodeImages(raw);\n    } else if (Array.isArray(raw)) {\n      images = raw;\n    }\n    if (!Array.isArray(images)) return [];\n    var cdn = 'https://c-nd3-1.6wm.top';\n    return images.map(function(item) {\n      var u = item.url;\n      if (!u) return '';\n      if (u.startsWith('/')) u = cdn + u;\n      else if (!/^https?:\\/\\//.test(u)) u = cdn + '/' + u;\n      return u;\n    }).filter(function(u) { return u && u.length > 0; });\n  }\n\n  function parseImages(html, context) {\n    var ctx = context || {};\n    var mid = ctx.mid || '';\n    var cid = ctx.cid || '';\n    if ((!mid || !cid) && ctx.id && typeof ctx.id === 'string' && ctx.id.indexOf('@') > 0) {\n      var parts = ctx.id.split('@');\n      if (!mid) mid = parts[0];\n      if (!cid) cid = parts[1];\n    }\n    if (!mid || !cid) {\n      try {\n        var m = (html + '').match(/\\/manga\\/(\\d+)\\/(\\d+)/);\n        if (m) { if (!mid) mid = m[1]; if (m[2]) cid = m[2]; }\n      } catch (e) {}\n    }\n    if (!mid || !cid) return [];\n    var apiUrl = 'https://v2.apikk.top/api/v2/chapter/getinfo?m=' + mid + '&c=' + cid;\n    return { __meta: true, __fetchUrl: apiUrl, __processor: '__processImages' };\n  }\n\n  function __processImages(apiJson, context) {\n    var data = null;\n    if (apiJson && apiJson.data) data = apiJson.data;\n    else if (apiJson && apiJson.info) data = apiJson;\n    return _extractImageUrls(data);\n  }"
+      }
+    }
+  },
+  "routes": {
+    "latest": {
+      "url": "/",
+      "method": "GET",
+      "headers": {
+        "Referer": "https://www.baozimh.com/",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36"
+      }
+    },
+    "explore": {
+      "url": "/manga/page/{page}",
+      "method": "GET",
+      "headers": {
+        "Referer": "https://www.baozimh.com/",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36"
+      }
+    },
+    "category": {
+      "url": "/manga-genre/{category}/page/{page}",
+      "method": "GET",
+      "headers": {
+        "Referer": "https://www.baozimh.com/",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36"
+      }
+    },
+    "search": {
+      "url": "/s/{keyword}?page={page}",
+      "method": "GET",
+      "headers": {
+        "Referer": "https://www.baozimh.com/",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36"
+      }
+    },
+    "tagSearch": {
+      "url": "/manga-tag/{keyword}/page/{page}",
+      "method": "GET",
+      "headers": {
+        "Referer": "https://www.baozimh.com/",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36"
+      }
+    },
+    "authorSearch": {
+      "url": "/manga-author/{keyword}/page/{page}",
+      "method": "GET",
+      "headers": {
+        "Referer": "https://www.baozimh.com/",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36"
+      }
+    },
+    "detail": {
+      "url": "/manga/{id}",
+      "method": "GET",
+      "headers": {
+        "Referer": "https://www.baozimh.com/",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36"
+      }
+    },
+    "chapters": {
+      "url": "/manga/{id}",
+      "method": "GET",
+      "headers": {
+        "Referer": "https://www.baozimh.com/",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36"
+      }
+    },
+    "images": {
+      "url": "/manga/{id}/{chapter_id}",
+      "method": "GET",
+      "headers": {
+        "Referer": "https://www.baozimh.com/",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36"
+      }
+    }
+  },
+  "selectors": {
+    "latest": {
+      "list": "a[href^=\"/manga/\"]",
+      "title": "h3@text",
+      "cover": "img@src||data-src",
+      "id": "a@href"
+    },
+    "explore": {
+      "list": "a[href^=\"/manga/\"]",
+      "title": "h3@text",
+      "cover": "img@src||data-src",
+      "id": "a@href"
+    },
+    "category": {
+      "list": "a[href^=\"/manga/\"]",
+      "title": "h3@text",
+      "cover": "img@src||data-src",
+      "id": "a@href",
+      "categories": [
+        {
+          "id": "kr",
+          "name": "韩漫"
+        },
+        {
+          "id": "cn",
+          "name": "国漫"
+        },
+        {
+          "id": "jp",
+          "name": "日漫"
+        },
+        {
+          "id": "ou-mei",
+          "name": "欧美"
+        },
+        {
+          "id": "qita",
+          "name": "其他"
+        },
+        {
+          "id": "hots",
+          "name": "热门漫画"
+        }
+      ],
+      "tags": [
+        {
+          "id": "gufeng",
+          "name": "古风"
+        },
+        {
+          "id": "fuchou",
+          "name": "复仇"
+        },
+        {
+          "id": "qihuan",
+          "name": "奇幻"
+        },
+        {
+          "id": "nixi",
+          "name": "逆袭"
+        },
+        {
+          "id": "yineng",
+          "name": "异能"
+        },
+        {
+          "id": "zhaixiang",
+          "name": "宅向"
+        },
+        {
+          "id": "chuanyue",
+          "name": "穿越"
+        },
+        {
+          "id": "rexue",
+          "name": "热血"
+        },
+        {
+          "id": "chunai",
+          "name": "纯爱"
+        },
+        {
+          "id": "xitong",
+          "name": "系统"
+        },
+        {
+          "id": "zhongsheng",
+          "name": "重生"
+        },
+        {
+          "id": "maoxian",
+          "name": "冒险"
+        },
+        {
+          "id": "lingyi",
+          "name": "灵异"
+        },
+        {
+          "id": "danvzhu",
+          "name": "大女主"
+        },
+        {
+          "id": "juqing",
+          "name": "剧情"
+        },
+        {
+          "id": "lianai",
+          "name": "恋爱"
+        },
+        {
+          "id": "xuanhuan",
+          "name": "玄幻"
+        },
+        {
+          "id": "nvshen",
+          "name": "女神"
+        },
+        {
+          "id": "kehuan",
+          "name": "科幻"
+        },
+        {
+          "id": "mohuan",
+          "name": "魔幻"
+        },
+        {
+          "id": "tuili",
+          "name": "推理"
+        },
+        {
+          "id": "lieqi",
+          "name": "猎奇"
+        },
+        {
+          "id": "zhiyu",
+          "name": "治愈"
+        },
+        {
+          "id": "doushi",
+          "name": "都市"
+        },
+        {
+          "id": "yixing",
+          "name": "异形"
+        },
+        {
+          "id": "qingchun",
+          "name": "青春"
+        },
+        {
+          "id": "mori",
+          "name": "末日"
+        },
+        {
+          "id": "xuanyi",
+          "name": "悬疑"
+        },
+        {
+          "id": "xiuxian",
+          "name": "修仙"
+        },
+        {
+          "id": "zhandou",
+          "name": "战斗"
+        }
+      ]
+    },
+    "search": {
+      "list": "a[href^=\"/manga/\"]",
+      "title": "h3@text",
+      "cover": "img@src||data-src",
+      "id": "a@href"
+    },
+    "tagSearch": {
+      "list": "a[href^=\"/manga/\"]",
+      "title": "h3@text",
+      "cover": "img@src||data-src",
+      "id": "a@href"
+    },
+    "authorSearch": {
+      "list": "a[href^=\"/manga/\"]",
+      "title": "h3@text",
+      "cover": "img@src||data-src",
+      "id": "a@href"
+    },
+    "detail": {
+      "title": "h1@text",
+      "cover": "#MangaCard img@src",
+      "author": "div:has(> span:contains(\"作者：\")) a[href^=\"/manga-author/\"]@text",
+      "genre": "div:has(> span:contains(\"類型：\")) a[href^=\"/manga-genre/\"]@text",
+      "tags": "a[href^=\"/manga-tag/\"] span@text",
+      "description": "p.line-clamp-4@text"
+    },
+    "chapters": {
+      "list": ".chapteritem",
+      "title": ".chaptertitle@text",
+      "id": "a@href",
+      "url": "a@href"
+    },
+    "images": {
+      "list": "#chapcontent img",
+      "fallbackUrl": "img@data-src||img@data-original||img@src",
+      "fallbackList": [
+        "#chapterContent img",
+        ".comic-page img"
+      ],
+      "config": {
+        "skipPatterns": [
+          "logo",
+          "icon",
+          "qrcode",
+          "avatar",
+          "banner"
+        ],
+        "sizeFilter": {
+          "minWidth": 100,
+          "minHeight": 100
+        },
+        "referer": {
+          "mode": "site"
+        },
+        "pagination": {
+          "mode": "none"
+        }
+      }
+    }
+  },
+  "antiHotlinking": {
+    "enabled": true,
+    "referer": "https://www.baozimh.com"
+  },
+  "homeSections": [
+    {
+      "id": "latest",
+      "route": "latest",
+      "title": "近期更新",
+      "style": "grid",
+      "limit": 18,
+      "more": true
+    },
+    {
+      "id": "hots",
+      "route": "category",
+      "title": "人气排行",
+      "style": "grid",
+      "limit": 12,
+      "more": true,
+      "params": {
+        "category": "hots"
+      }
+    },
+    {
+      "id": "explore_new",
+      "route": "explore",
+      "title": "最新上架",
+      "style": "grid",
+      "limit": 12,
+      "more": true
+    },
+    {
+      "id": "kr",
+      "route": "category",
+      "title": "韩漫",
+      "style": "grid",
+      "limit": 6,
+      "more": true,
+      "params": {
+        "category": "kr"
+      }
+    },
+    {
+      "id": "cn",
+      "route": "category",
+      "title": "国漫",
+      "style": "grid",
+      "limit": 6,
+      "more": true,
+      "params": {
+        "category": "cn"
+      }
+    },
+    {
+      "id": "jp",
+      "route": "category",
+      "title": "日漫",
+      "style": "grid",
+      "limit": 6,
+      "more": true,
+      "params": {
+        "category": "jp"
+      }
+    }
+  ]
+}

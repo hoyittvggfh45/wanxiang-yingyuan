@@ -1,0 +1,5755 @@
+{
+ "sources": [
+  {
+   "id": "hmav",
+   "name": "🔞河马AV",
+   "type": "animeSource",
+   "site": {
+    "domain": "5.hmav6546.cc:8888",
+    "baseUrl": "https://5.hmav6546.cc:8888"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/hmav.py",
+    "sourceRef": "asset:assets/py_spiders/hmav.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · hmav；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "abjav",
+   "name": "🔞ABJAV",
+   "type": "animeSource",
+   "site": {
+    "domain": "abjav.com",
+    "baseUrl": "https://abjav.com"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/abjav.py",
+    "sourceRef": "asset:assets/py_spiders/abjav.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · abjav；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "ai2026",
+   "name": "🔞2026短剧AI",
+   "type": "animeSource",
+   "site": {
+    "domain": "11051735.2026aidj18.lol",
+    "baseUrl": "https://11051735.2026aidj18.lol"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/ai2026.py",
+    "sourceRef": "asset:assets/py_spiders/ai2026.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · ai2026；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "ai4k",
+   "name": "🔞4K.AI短剧",
+   "type": "animeSource",
+   "site": {
+    "domain": "wyswspqjtr.click",
+    "baseUrl": "https://wyswspqjtr.click"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/ai4k.py",
+    "sourceRef": "asset:assets/py_spiders/ai4k.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · ai4k；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "aidj",
+   "name": "🔞AI短剧AV",
+   "type": "animeSource",
+   "site": {
+    "domain": "aisee10w29.buzz",
+    "baseUrl": "https://aisee10w29.buzz"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/aidj.py",
+    "sourceRef": "asset:assets/py_spiders/aidj.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · aidj；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "aiduanju",
+   "name": "🔞AI短剧网",
+   "type": "animeSource",
+   "site": {
+    "domain": "ai.aiduanjuwang8.cc",
+    "baseUrl": "https://ai.aiduanjuwang8.cc"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/aiduanju.py",
+    "sourceRef": "asset:assets/py_spiders/aiduanju.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · aiduanju；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "aimove",
+   "name": "🔞新黄果短剧",
+   "type": "animeSource",
+   "site": {
+    "domain": "aimove.click",
+    "baseUrl": "https://aimove.click"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/aimove.py",
+    "sourceRef": "asset:assets/py_spiders/aimove.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · aimove；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "aisxpc",
+   "name": "🔞Ai小视频",
+   "type": "animeSource",
+   "site": {
+    "domain": "aicjjc.cc",
+    "baseUrl": "https://aicjjc.cc"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/aisxpc.py",
+    "sourceRef": "asset:assets/py_spiders/aisxpc.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · aisxpc；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "asextv",
+   "name": "🔞A色TV",
+   "type": "animeSource",
+   "site": {
+    "domain": "asextv.xyz",
+    "baseUrl": "https://asextv.xyz"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/asextv.py",
+    "sourceRef": "asset:assets/py_spiders/asextv.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · asextv；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "avhwa",
+   "name": "🔞AVHWA",
+   "type": "animeSource",
+   "site": {
+    "domain": "avhwa.com",
+    "baseUrl": "https://avhwa.com"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/avhwa.py",
+    "sourceRef": "asset:assets/py_spiders/avhwa.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · avhwa；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "avtoday",
+   "name": "🔞AV Today",
+   "type": "animeSource",
+   "site": {
+    "domain": "avtoday.io",
+    "baseUrl": "https://avtoday.io"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/avtoday.py",
+    "sourceRef": "asset:assets/py_spiders/avtoday.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · avtoday；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "avyanjiuyuan",
+   "name": "🔞AV研究院",
+   "type": "animeSource",
+   "site": {
+    "domain": "avyan2026.lol",
+    "baseUrl": "https://avyan2026.lol"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/avyanjiuyuan.py",
+    "sourceRef": "asset:assets/py_spiders/avyanjiuyuan.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · avyanjiuyuan；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "badyi",
+   "name": "🔞八度影院",
+   "type": "animeSource",
+   "site": {
+    "domain": "badyi.cc",
+    "baseUrl": "https://badyi.cc"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/badyi.py",
+    "sourceRef": "asset:assets/py_spiders/badyi.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · badyi；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "caoliu",
+   "name": "🔞草榴视频",
+   "type": "animeSource",
+   "site": {
+    "domain": "caoliu.io",
+    "baseUrl": "https://caoliu.io"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/caoliu.py",
+    "sourceRef": "asset:assets/py_spiders/caoliu.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · caoliu；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "chinax",
+   "name": "🔞中国X站",
+   "type": "animeSource",
+   "site": {
+    "domain": "chinaxmovie.com",
+    "baseUrl": "https://chinaxmovie.com"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/chinax.py",
+    "sourceRef": "asset:assets/py_spiders/chinax.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · chinax；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "chinaxselecla08",
+   "name": "🔞中国X站精选",
+   "type": "animeSource",
+   "site": {
+    "domain": "chinaxselecla08.xyz",
+    "baseUrl": "https://chinaxselecla08.xyz"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/chinaxselecla08.py",
+    "sourceRef": "asset:assets/py_spiders/chinaxselecla08.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · chinaxselecla08；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "danai",
+   "name": "🔞大奶Ai短剧",
+   "type": "animeSource",
+   "site": {
+    "domain": "91crdjai.com",
+    "baseUrl": "https://91crdjai.com"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/danai.py",
+    "sourceRef": "asset:assets/py_spiders/danai.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · danai；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "dingjiaseku",
+   "name": "🔞顶级AI色库",
+   "type": "animeSource",
+   "site": {
+    "domain": "yxql-imh-nh4d.taoquan26s111.cc",
+    "baseUrl": "https://yxql-imh-nh4d.taoquan26s111.cc"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/dingjiaseku.py",
+    "sourceRef": "asset:assets/py_spiders/dingjiaseku.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · dingjiaseku；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "dj69",
+   "name": "🔞69短剧",
+   "type": "animeSource",
+   "site": {
+    "domain": "q7w2kx.69dj05.vip",
+    "baseUrl": "https://q7w2kx.69dj05.vip"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/dj69.py",
+    "sourceRef": "asset:assets/py_spiders/dj69.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · dj69；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "dj91",
+   "name": "🔞91短剧",
+   "type": "animeSource",
+   "site": {
+    "domain": "app.91dju.cyou",
+    "baseUrl": "https://app.91dju.cyou"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/dj91.py",
+    "sourceRef": "asset:assets/py_spiders/dj91.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · dj91；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "djwo",
+   "name": "🔞短剧窝",
+   "type": "animeSource",
+   "site": {
+    "domain": "langwonqyl.forum",
+    "baseUrl": "https://langwonqyl.forum"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/djwo.py",
+    "sourceRef": "asset:assets/py_spiders/djwo.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · djwo；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "duanjuone",
+   "name": "🔞短剧one",
+   "type": "animeSource",
+   "site": {
+    "domain": "duanju.one",
+    "baseUrl": "https://duanju.one"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/duanjuone.py",
+    "sourceRef": "asset:assets/py_spiders/duanjuone.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · duanjuone；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "aihi",
+   "name": "🔞AIHI",
+   "type": "animeSource",
+   "site": {
+    "domain": "aihi.cc",
+    "baseUrl": "https://aihi.cc"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/aihi.py",
+    "sourceRef": "asset:assets/py_spiders/aihi.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · aihi；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "ficeforand",
+   "name": "🔞AI小视频·ficeforand",
+   "type": "animeSource",
+   "site": {
+    "domain": "ficeforand.aicjjc.cc",
+    "baseUrl": "https://ficeforand.aicjjc.cc"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/ficeforand.py",
+    "sourceRef": "asset:assets/py_spiders/ficeforand.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · ficeforand；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "aipornx",
+   "name": "🔞AiPorn",
+   "type": "animeSource",
+   "site": {
+    "domain": "media.hgpicimg.cc",
+    "baseUrl": "https://media.hgpicimg.cc"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/aipornx.py",
+    "sourceRef": "asset:assets/py_spiders/aipornx.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · aipornx；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "aiyinhang",
+   "name": "🔞AI淫航",
+   "type": "animeSource",
+   "site": {
+    "domain": "www.aiyinhang.top",
+    "baseUrl": "https://www.aiyinhang.top"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/aiyinhang.py",
+    "sourceRef": "asset:assets/py_spiders/aiyinhang.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · aiyinhang；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "aiwu",
+   "name": "🔞AI污短剧",
+   "type": "animeSource",
+   "site": {
+    "domain": "aiwu.ai-wu.cc",
+    "baseUrl": "https://aiwu.ai-wu.cc"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/aiwu.py",
+    "sourceRef": "asset:assets/py_spiders/aiwu.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · aiwu；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "xojav",
+   "name": "🔞XOJAV",
+   "type": "animeSource",
+   "site": {
+    "domain": "xojav.tv",
+    "baseUrl": "https://xojav.tv"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/xojav.py",
+    "sourceRef": "asset:assets/py_spiders/xojav.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · xojav；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "porncgw",
+   "name": "🔞Porn吃瓜网",
+   "type": "animeSource",
+   "site": {
+    "domain": "porncgw.com",
+    "baseUrl": "https://porncgw.com"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/porncgw.py",
+    "sourceRef": "asset:assets/py_spiders/porncgw.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · porncgw；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "xhongyan",
+   "name": "🔞X红颜",
+   "type": "animeSource",
+   "site": {
+    "domain": "xhongyan.com",
+    "baseUrl": "https://xhongyan.com"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/xhongyan.py",
+    "sourceRef": "asset:assets/py_spiders/xhongyan.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · xhongyan；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "kankux",
+   "name": "🔞看裤X",
+   "type": "animeSource",
+   "site": {
+    "domain": "kankux.com",
+    "baseUrl": "https://kankux.com"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/kankux.py",
+    "sourceRef": "asset:assets/py_spiders/kankux.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · kankux；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "guohnsqj",
+   "name": "🔞欲望乐园",
+   "type": "animeSource",
+   "site": {
+    "domain": "zdap.gkquu.cn:4438",
+    "baseUrl": "https://zdap.gkquu.cn:4438"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/guohnsqj.py",
+    "sourceRef": "asset:assets/py_spiders/guohnsqj.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · guohnsqj；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "51xz",
+   "name": "🔞51X",
+   "type": "animeSource",
+   "site": {
+    "domain": "51xz.vip",
+    "baseUrl": "https://51xz.vip"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/51xz.py",
+    "sourceRef": "asset:assets/py_spiders/51xz.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · 51xz；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "sexaix",
+   "name": "🔞幻影AI",
+   "type": "animeSource",
+   "site": {
+    "domain": "sexaix.top",
+    "baseUrl": "https://sexaix.top"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/sexaix.py",
+    "sourceRef": "asset:assets/py_spiders/sexaix.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · sexaix；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "qipaosp",
+   "name": "🔞气泡视频",
+   "type": "animeSource",
+   "site": {
+    "domain": "qipaosp.devs.li",
+    "baseUrl": "https://qipaosp.devs.li"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/qipaosp.py",
+    "sourceRef": "asset:assets/py_spiders/qipaosp.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · qipaosp；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "youzidj",
+   "name": "🔞柚子短剧",
+   "type": "animeSource",
+   "site": {
+    "domain": "youzidj.com",
+    "baseUrl": "https://youzidj.com"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/youzidj.py",
+    "sourceRef": "asset:assets/py_spiders/youzidj.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · youzidj；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "tanhuavip14",
+   "name": "🔞探花AV",
+   "type": "animeSource",
+   "site": {
+    "domain": "tanhuavip14.xyz",
+    "baseUrl": "https://tanhuavip14.xyz"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/tanhuavip14.py",
+    "sourceRef": "asset:assets/py_spiders/tanhuavip14.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · tanhuavip14；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "fuchou",
+   "name": "🔞妇愁者联盟",
+   "type": "animeSource",
+   "site": {
+    "domain": "kkb1.sixnicefczlm.cc",
+    "baseUrl": "https://kkb1.sixnicefczlm.cc"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/fuchou.py",
+    "sourceRef": "asset:assets/py_spiders/fuchou.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · fuchou；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "heitao",
+   "name": "🔞黑桃短剧",
+   "type": "animeSource",
+   "site": {
+    "domain": "heitaodj.com",
+    "baseUrl": "https://heitaodj.com"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/heitao.py",
+    "sourceRef": "asset:assets/py_spiders/heitao.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · heitao；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "jinguo",
+   "name": "🔞金果短剧",
+   "type": "animeSource",
+   "site": {
+    "domain": "play.jinguoduanju.app",
+    "baseUrl": "https://play.jinguoduanju.app"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/jinguo.py",
+    "sourceRef": "asset:assets/py_spiders/jinguo.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · jinguo；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "youtube_py",
+   "name": "YouTube",
+   "type": "animeSource",
+   "site": {
+    "domain": "www.youtube.com",
+    "baseUrl": "https://www.youtube.com"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/youtube.py",
+    "sourceRef": "asset:assets/py_spiders/youtube.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · youtube_py；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "youtube",
+   "name": "YouTube",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/youtube.jar",
+    "api": "csp_YouTube",
+    "ext": "{\"proxy\":\"\"}"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_YouTube"
+  },
+  {
+   "id": "ZakaMjv011",
+   "name": "🔞mjv011",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaMjv011Amns2",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaMjv011Amns2"
+  },
+  {
+   "id": "ZakaHuangguo",
+   "name": "🔞黄果",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaHuangguoAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaHuangguoAmns"
+  },
+  {
+   "id": "ZakaHl365",
+   "name": "🔞黑料不打烊",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaHl365Amns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaHl365Amns"
+  },
+  {
+   "id": "ZakaLnkl",
+   "name": "🔞lnkl",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaLnklAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaLnklAmns"
+  },
+  {
+   "id": "ZakaHuangdou",
+   "name": "🔞黄豆短剧",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaHuangdouAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaHuangdouAmns"
+  },
+  {
+   "id": "ZakaSex8",
+   "name": "🔞sex8┃视频",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaSex8Amns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaSex8Amns"
+  },
+  {
+   "id": "ZakaHgdjV",
+   "name": "🔞黄果短剧┃视频",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaHgdjVAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaHgdjVAmns"
+  },
+  {
+   "id": "ZakaKm2",
+   "name": "🔞新快猫",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaKm2Amns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaKm2Amns"
+  },
+  {
+   "id": "ZakaCucumber",
+   "name": "🔞黄瓜视频",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaCucumberAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaCucumberAmns"
+  },
+  {
+   "id": "ZakaHaijiao",
+   "name": "🔞海角社区",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaHaijiaoAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaHaijiaoAmns"
+  },
+  {
+   "id": "ZakaMd",
+   "name": "🔞麻豆",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaMdAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaMdAmns"
+  },
+  {
+   "id": "ZakaUtube",
+   "name": "🔞Utube",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaUtubeAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaUtubeAmns"
+  },
+  {
+   "id": "ZakaXj",
+   "name": "🔞香蕉视频",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaXjAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaXjAmns"
+  },
+  {
+   "id": "ZakaAv91",
+   "name": "🔞av91",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaAv91Amns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaAv91Amns"
+  },
+  {
+   "id": "ZakaLxs",
+   "name": "🔞撸先生",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaLxsAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaLxsAmns"
+  },
+  {
+   "id": "ZakaJavrate",
+   "name": "🛡️鉴黄师┃原生",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaJavrateAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaJavrateAmns"
+  },
+  {
+   "id": "zakajavverse",
+   "name": "🆕🔞JAV Verse┃资料库+双线路",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaJavverseAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaJavverseAmns"
+  },
+  {
+   "id": "zakaxszav",
+   "name": "🆕🔞XSZAV┃无码·中文字幕",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaXszavAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaXszavAmns"
+  },
+  {
+   "id": "zakav01",
+   "name": "🆕🔞AV01┃无码破解·多码率",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaAv01Amns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaAv01Amns"
+  },
+  {
+   "id": "zakaaiye",
+   "name": "🆕🔞爱液视频┃官方App接口",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaAiyeAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaAiyeAmns"
+  },
+  {
+   "id": "zakahysxs",
+   "name": "🆕🔞H有声小说┃AES解密直取",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaHysxsAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaHysxsAmns"
+  },
+  {
+   "id": "zakapuapua",
+   "name": "🔞PUA独家爆料┃多域直取",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaPuapuaAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaPuapuaAmns"
+  },
+  {
+   "id": "zaketxfans",
+   "name": "🆕🔞糖心Fans┃设备登录+AES协议",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaTxfansAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaTxfansAmns"
+  },
+  {
+   "id": "zakajuyin",
+   "name": "🆕🔞巨婴云播┃静态站整页包壳",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaJuyinAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaJuyinAmns"
+  },
+  {
+   "id": "zaka99jj",
+   "name": "🆕🔞久久热┃KVS直取384P",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_Zaka99jjAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_Zaka99jjAmns"
+  },
+  {
+   "id": "zakadayday",
+   "name": "🆕🔞天天A片┃CF盾绕行上游",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaDaydayAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaDaydayAmns"
+  },
+  {
+   "id": "dsav",
+   "name": "🆕🔞DSAV影视┃加密网关直取",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaDsavAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaDsavAmns"
+  },
+  {
+   "id": "kuaihuo",
+   "name": "🆕🔞快活影院┃静态站直取",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaKuaihuoAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaKuaihuoAmns"
+  },
+  {
+   "id": "zakans",
+   "name": "🆕🔞ns视频┃签到破VIP看正片",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaNsAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaNsAmns"
+  },
+  {
+   "id": "jack20",
+   "name": "🆕🔞後宮電影院┃xvideos聚合",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaJack20Amns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaJack20Amns"
+  },
+  {
+   "id": "coolinet",
+   "name": "🆕🔞酷愛成人網┃WP全站直取",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaCoolAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaCoolAmns"
+  },
+  {
+   "id": "gqck",
+   "name": "🆕🔞高清仓库┃免登直取",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaGqckAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaGqckAmns"
+  },
+  {
+   "id": "zaka115",
+   "name": "☁️115网盘┃扫码离线",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_Zaka115Amns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_Zaka115Amns"
+  },
+  {
+   "id": "zakajavpk",
+   "name": "🔞JAVPK┃磁力自动离线",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaJavpkAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaJavpkAmns"
+  },
+  {
+   "id": "ZakaPektino",
+   "name": "🐦 推特涩涩┃PeKtino",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaPektinoAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaPektinoAmns"
+  },
+  {
+   "id": "wuyetv",
+   "name": "🕛 午夜TV┃百万精选",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaWyAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaWyAmns"
+  },
+  {
+   "id": "bhbox",
+   "name": "📦 笔盒┃海量精选",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaBhAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaBhAmns"
+  },
+  {
+   "id": "zakaqmdj",
+   "name": "🔞七猫短剧┃VIP破解",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaQmdjAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaQmdjAmns"
+  },
+  {
+   "id": "ZakaHxc",
+   "name": "🔞含羞草┃VIP破解",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaHxcAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaHxcAmns"
+  },
+  {
+   "id": "ZakaUu",
+   "name": "🔞Uu视频┃多线路",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaUuAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaUuAmns"
+  },
+  {
+   "id": "zaka520av",
+   "name": "🔞520AV影城",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_Zaka520avAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_Zaka520avAmns"
+  },
+  {
+   "id": "ZakaHjw",
+   "name": "🔞海角网┃hj2",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaHjwAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaHjwAmns"
+  },
+  {
+   "id": "ZakaHj1",
+   "name": "🔞海角社区┃hj1",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaHj1Amns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaHj1Amns"
+  },
+  {
+   "id": "ZakaJav380",
+   "name": "🆕🔞JAV380┃無碼",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaJav380Amns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaJav380Amns"
+  },
+  {
+   "id": "ZakaJavher",
+   "name": "🆕🔞JavHer┃JAV庫",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaJavherAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaJavherAmns"
+  },
+  {
+   "id": "zakaaoxx69",
+   "name": "🔞AOXX69┃亞洲綜合",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaAoxx69Amns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaAoxx69Amns"
+  },
+  {
+   "id": "zakajavmap",
+   "name": "🔞JAVMAP┃日本AV大全",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaJavmapAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaJavmapAmns"
+  },
+  {
+   "id": "zakapigav",
+   "name": "🔞PIGAV┃朱古力",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaPigavAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaPigavAmns"
+  },
+  {
+   "id": "zakasihucdn",
+   "name": "🔞四虎┃免盾CDN",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaSihuCdnAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaSihuCdnAmns"
+  },
+  {
+   "id": "zakasihu",
+   "name": "🔞四虎┃4hu",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaSihuAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaSihuAmns"
+  },
+  {
+   "id": "av18avmcg",
+   "name": "🆕🔞18AV主站┃本地代理",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_Zaka18avMcgAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_Zaka18avMcgAmns"
+  },
+  {
+   "id": "zakaxx9",
+   "name": "🆕🔞XX9┃金币站",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaXx9Amns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaXx9Amns"
+  },
+  {
+   "id": "Zaka69vj",
+   "name": "🆕🔞69VJ┃xvideos片库",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_Zaka69vjAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_Zaka69vjAmns"
+  },
+  {
+   "id": "ZakaAvbebe",
+   "name": "🆕🔞Avbebe┃H動畫里番",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaAvbebeAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaAvbebeAmns"
+  },
+  {
+   "id": "ZakaAvcnn",
+   "name": "🆕🔞AVCNN┃番号女优",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaAvcnnAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaAvcnnAmns"
+  },
+  {
+   "id": "ZakaAvple",
+   "name": "🆕🔞AVPle┃免盾直取",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaAvpleAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaAvpleAmns"
+  },
+  {
+   "id": "ZakaJavwine",
+   "name": "🆕🔞JAV.WINE┃日系高清",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaJavwineAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaJavwineAmns"
+  },
+  {
+   "id": "ZakaNjav",
+   "name": "🆕🔞nJAV┃中字无码",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaNjavAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaNjavAmns"
+  },
+  {
+   "id": "ZakaJavhd",
+   "name": "🆕🔞JavHD中文字幕┃日本管",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaJavhdAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaJavhdAmns"
+  },
+  {
+   "id": "ZakaBaoyu",
+   "name": "🆕🔞鲍鱼盒子┃App直连",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaBaoyuAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaBaoyuAmns"
+  },
+  {
+   "id": "ZakaQysq",
+   "name": "🆕🔞妻友社区┃阅妹阁模块",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaQysqAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaQysqAmns"
+  },
+  {
+   "id": "ZakaHgdj",
+   "name": "🔞黄果短剧┃AI成人短剧",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaHgdjAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaHgdjAmns"
+  },
+  {
+   "id": "ZakaHgdjApp",
+   "name": "🆕🔞黄果短剧App┃App网关",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaHgdjAppAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaHgdjAppAmns"
+  },
+  {
+   "id": "zakahzai747",
+   "name": "🔞盒子AI视频┃747专线",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaHzaiAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaHzaiAmns"
+  },
+  {
+   "id": "zakaseku",
+   "name": "🔞阅妹阁┃App原版62站",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaSekuAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaSekuAmns"
+  },
+  {
+   "id": "zakakp14",
+   "name": "🔞看片站群┃App挖出14站",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaYueMGeAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaYueMGeAmns"
+  },
+  {
+   "id": "zaka-yue2",
+   "name": "🔞阅妹阁模块2┃JavDB+51吃瓜",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaYueMGe2Amns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaYueMGe2Amns"
+  },
+  {
+   "id": "zakafq",
+   "name": "🔞番茄视频┃免登入直取",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaFqAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaFqAmns"
+  },
+  {
+   "id": "zakawnzs",
+   "name": "🔞WNZS┃网络杀手",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaWnzsAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaWnzsAmns"
+  },
+  {
+   "id": "zakahzai",
+   "name": "🔞盒子AI视频┃原生",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaHzaiAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaHzaiAmns"
+  },
+  {
+   "id": "ZakaXme",
+   "name": "🔞樱桃破解┃站群直连",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaXmeAmns",
+    "ext": "{\"channelCode\":\"5051\"}"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaXmeAmns"
+  },
+  {
+   "id": "zakatudou",
+   "name": "🔞土豆视频┃原生",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaTudouAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaTudouAmns"
+  },
+  {
+   "id": "zakaxjh5",
+   "name": "🍌香蕉视频H5┃免登入",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaXjH5Amns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaXjH5Amns"
+  },
+  {
+   "id": "zakaykf",
+   "name": "🔞快播至臻版┃下载页直取",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaYkfAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaYkfAmns"
+  },
+  {
+   "id": "zakaxj",
+   "name": "🍌香蕉视频┃免登入直取",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaXjAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaXjAmns"
+  },
+  {
+   "id": "zakakfz",
+   "name": "🔞K站┃密钥直取",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaKfzAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaKfzAmns"
+  },
+  {
+   "id": "ZakaMissav",
+   "name": "🔞MissAV官方┃过盾",
+   "type": "animeSource",
+   "site": {
+    "domain": "tv506.ystv.top",
+    "baseUrl": "https://tv506.ystv.top"
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaMissavAmns",
+    "ext": "{\"base\":\"https://tv506.ystv.top\",\"miss\":\"https://missav.ws286.ystv.top\"}"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaMissavAmns"
+  },
+  {
+   "id": "ZakaJavRank",
+   "name": "🏆JAV排行榜┃1769部战力榜",
+   "type": "animeSource",
+   "site": {
+    "domain": "javrank849.ystv.top",
+    "baseUrl": "https://javrank849.ystv.top"
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaJavRankAmns",
+    "ext": "{\"site\":\"https://javrank849.ystv.top\",\"miss\":\"https://missav.ws286.ystv.top\"}"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaJavRankAmns"
+  },
+  {
+   "id": "ZakaHddj",
+   "name": "🔞黄豆短剧┃AI短剧+漫剧",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaHddjAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaHddjAmns"
+  },
+  {
+   "id": "ZakaCrdj",
+   "name": "🔞91成人短剧┃全站",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaCrdjAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaCrdjAmns"
+  },
+  {
+   "id": "ZakaJm",
+   "name": "🔞JAV目錄┃免登录直取",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaJmAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaJmAmns"
+  },
+  {
+   "id": "ZakaCn",
+   "name": "🔞中文秘密资源┃国产+有码",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaCnAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaCnAmns"
+  },
+  {
+   "id": "ZakaBnzb",
+   "name": "🔞百年直播┃129平台",
+   "type": "animeSource",
+   "site": {
+    "domain": "api.vipmisss.com:81",
+    "baseUrl": "http://api.vipmisss.com:81/xcdsw"
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaBnzbAmns",
+    "ext": "{\"host\":\"http://api.vipmisss.com:81/xcdsw\"}"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaBnzbAmns"
+  },
+  {
+   "id": "ZakaGetav",
+   "name": "👑帝皇影视┃4.5万部",
+   "type": "animeSource",
+   "site": {
+    "domain": "getav.me",
+    "baseUrl": "https://getav.me"
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaGetavAmns",
+    "ext": "{\"host\":\"https://getav.me\",\"static\":\"https://static.worldstatic.com\",\"brand\":\"👑帝皇影视\",\"tg\":\"https://t.me/+3t5XRPPo9mlkZDRl\"}"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaGetavAmns"
+  },
+  {
+   "id": "Zaka69ck",
+   "name": "👑帝皇影视┃黄色仓库",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_Zaka69ckAmns",
+    "ext": "{\"brand\":\"👑帝皇影视\",\"tg\":\"https://t.me/+3t5XRPPo9mlkZDRl\"}"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_Zaka69ckAmns"
+  },
+  {
+   "id": "ZakaHsck",
+   "name": "👑帝皇影视┃黄色仓库②",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaHsckAmns",
+    "ext": "{\"brand\":\"👑帝皇影视\",\"tg\":\"https://t.me/+3t5XRPPo9mlkZDRl\"}"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaHsckAmns"
+  },
+  {
+   "id": "ZakaSe8",
+   "name": "🖼八色套图┃1.4万套",
+   "type": "animeSource",
+   "site": {
+    "domain": "8se.me",
+    "baseUrl": "https://8se.me"
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaSe8Amns",
+    "ext": "{\"host\":\"https://8se.me\",\"cdn\":\"https://img.xchina.io\",\"brand\":\"🖼 八色套图\",\"relays\":\"https://tv506.ystv.top\"}"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaSe8Amns"
+  },
+  {
+   "id": "ZakaMissavOff",
+   "name": "🔞MissAV官方┃原生",
+   "type": "animeSource",
+   "site": {
+    "domain": "missav.live",
+    "baseUrl": "https://missav.live"
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaMissavOffAmns",
+    "ext": "{\"host\":\"https://missav.live\",\"relay\":\"https://tv506.ystv.top\",\"flare\":\"http://192.168.31.2:8191/v1\"}"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaMissavOffAmns"
+  },
+  {
+   "id": "ZakaMirror",
+   "name": "🔞MissAV镜像┃免代理",
+   "type": "animeSource",
+   "site": {
+    "domain": "www.thisav.my",
+    "baseUrl": "https://www.thisav.my"
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaMirrorAmns",
+    "ext": "{\"host\":\"https://www.thisav.my\"}"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaMirrorAmns"
+  },
+  {
+   "id": "ZakaAdult",
+   "name": "📁成人资源中心",
+   "type": "animeSource",
+   "site": {
+    "domain": "tv506.ystv.top",
+    "baseUrl": "https://tv506.ystv.top"
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaAdultResAmns",
+    "ext": "{\"base\":\"https://tv506.ystv.top\",\"miss\":\"https://missav.ws286.ystv.top\"}"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaAdultResAmns"
+  },
+  {
+   "id": "Zaka123av",
+   "name": "🎬123AV┃原生",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_Zaka123avAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_Zaka123avAmns"
+  },
+  {
+   "id": "ZakaDsd",
+   "name": "🎬懂色帝┃原生",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaDsdAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaDsdAmns"
+  },
+  {
+   "id": "ZakaWhos",
+   "name": "🔍whos识图┃原生",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaWhosAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaWhosAmns"
+  },
+  {
+   "id": "ZakaLissav",
+   "name": "🔞麻豆视频┃LissAV",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaLissavAmns",
+    "ext": "{\"section\":\"asian\"}"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaLissavAmns"
+  },
+  {
+   "id": "ZakaLissavCn",
+   "name": "🔞麻豆视频┃国产区",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaLissavAmns",
+    "ext": "{\"section\":\"domestic\"}"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaLissavAmns"
+  },
+  {
+   "id": "ZakaJable",
+   "name": "🔞Jable┃JAD免代理",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaJableAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaJableAmns"
+  },
+  {
+   "id": "ZakaXhamster",
+   "name": "🔞xHamster┃XH免代理",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaXhamsterAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaXhamsterAmns"
+  },
+  {
+   "id": "ZakaRou",
+   "name": "🔞肉视频┃ROU免代理",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaRouAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaRouAmns"
+  },
+  {
+   "id": "Zaka321av",
+   "name": "🔞321AV┃中文字幕",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_Zaka321avAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_Zaka321avAmns"
+  },
+  {
+   "id": "ZakaPb",
+   "name": "🔞好色TV┃PB免代理",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaPbAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaPbAmns"
+  },
+  {
+   "id": "rouav",
+   "name": "🔞rouAV┃PB免代理",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaRouavAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaRouavAmns"
+  },
+  {
+   "id": "av18av",
+   "name": "🔞18AV┃本地代理",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_Zaka18avAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_Zaka18avAmns"
+  },
+  {
+   "id": "dage",
+   "name": "🔞大哥视频┃清单转写",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaDageAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaDageAmns"
+  },
+  {
+   "id": "ZakaSupjav",
+   "name": "🔞SupJav┃中继免盾",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaSupjavAmns",
+    "ext": "{\"relay\":\"https://py.fzcrym.link:1314\"}"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaSupjavAmns"
+  },
+  {
+   "id": "ZakaPornhub",
+   "name": "🔞Pornhub┃免代理",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaPornhubAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaPornhubAmns"
+  },
+  {
+   "id": "ZakaRohu",
+   "name": "🔞YouTube成人版┃wyll",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaRohuAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaRohuAmns"
+  },
+  {
+   "id": "sporn",
+   "name": "🔞SuperPorn┃欧美免代理",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaKvsAmns",
+    "ext": "{\"site\":\"sporn\"}"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaKvsAmns"
+  },
+  {
+   "id": "yporn",
+   "name": "🔞YESPORN┃欧美免代理",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaKvsAmns",
+    "ext": "{\"site\":\"yporn\"}"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaKvsAmns"
+  },
+  {
+   "id": "okxxx",
+   "name": "🔞OKXXX┃欧美免代理",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaKvsAmns",
+    "ext": "{\"site\":\"okxxx\"}"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaKvsAmns"
+  },
+  {
+   "id": "591av",
+   "name": "🔞591AV┃亚洲素人",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaKvsAmns",
+    "ext": "{\"site\":\"591av\"}"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaKvsAmns"
+  },
+  {
+   "id": "avjoy",
+   "name": "🔞AVJOY┃欧美免代理",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaAvjoyAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaAvjoyAmns"
+  },
+  {
+   "id": "hanime",
+   "name": "🔞Hanime1┃里番H动漫",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaHmAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaHmAmns"
+  },
+  {
+   "id": "xvideo",
+   "name": "🔞XVIDEOS┃欧美免代理",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaXvAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaXvAmns"
+  },
+  {
+   "id": "ptt01",
+   "name": "🔞PTT01┃三级稀缺",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaPttAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaPttAmns"
+  },
+  {
+   "id": "cporn",
+   "name": "🔞CartoonPorno┃欧美卡通",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaKvsAmns",
+    "ext": "{\"site\":\"cporn\"}"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaKvsAmns"
+  },
+  {
+   "id": "xanimu",
+   "name": "🔞Xanimu┃里番动漫",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaXanimuAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaXanimuAmns"
+  },
+  {
+   "id": "xx01",
+   "name": "🔞XX01┃无码流出",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaXx01Amns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaXx01Amns"
+  },
+  {
+   "id": "netflav",
+   "name": "🔞Netflav┃帝皇影视",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaNetflavAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaNetflavAmns"
+  },
+  {
+   "id": "goodav",
+   "name": "🔞正妹AV┃原生",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaGoodavAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaGoodavAmns"
+  },
+  {
+   "id": "av6k",
+   "name": "🔞AV6K┃原生",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaAv6kAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaAv6kAmns"
+  },
+  {
+   "id": "jav",
+   "name": "🔞J-AV┃原生",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaJavAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaJavAmns"
+  },
+  {
+   "id": "jav777",
+   "name": "🔞JAV777┃原生",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaJav777Amns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaJav777Amns"
+  },
+  {
+   "id": "airav",
+   "name": "🔞AirAV┃原生",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaAiravAmns",
+    "ext": "{\"relay\":\"https://py.fzcrym.link:1314\"}"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaAiravAmns"
+  },
+  {
+   "id": "zaka93",
+   "name": "👑93站合一",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_Zaka93Amns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_Zaka93Amns"
+  },
+  {
+   "id": "go2av",
+   "name": "🔞GO2AV┃帝皇影视",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaGo2avAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaGo2avAmns"
+  },
+  {
+   "id": "mmtv7",
+   "name": "🔞7MMTV┃帝皇影视",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_Zaka7mmAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_Zaka7mmAmns"
+  },
+  {
+   "id": "zggjav",
+   "name": "🔞GGJAV┃帝皇影视",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaGgjavAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaGgjavAmns"
+  },
+  {
+   "id": "avbigplat",
+   "name": "🔞AV大平台┃蝴蝶",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_Zaka9SexAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_Zaka9SexAmns"
+  },
+  {
+   "id": "xhy11",
+   "name": "🔞小黄鸭┃xhy11",
+   "type": "animeSource",
+   "site": {
+    "domain": "www.xhy11.cc",
+    "baseUrl": "https://www.xhy11.cc"
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaXhyAmns",
+    "ext": "{\"host\":\"https://www.xhy11.cc\",\"brand\":\"👑帝皇影视\",\"tg\":\"https://t.me/+3t5XRPPo9mlkZDRl\"}"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaXhyAmns"
+  },
+  {
+   "id": "pj5ti",
+   "name": "🔞蜜桃社┃pj5ti",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaPj5tiAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaPj5tiAmns"
+  },
+  {
+   "id": "MyConfig",
+   "name": "⚙️配置┃中心",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_AAConfigAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_AAConfigAmns"
+  },
+  {
+   "id": "ZakaTg",
+   "name": "tg频道",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaTgAmns",
+    "ext": "{\"mirror\":\"https://tg.i-c-a.su\",\"size\":50,\"block\":100,\"channels\":[{\"name\":\"超清AV\",\"user\":\"cctv_av\"},{\"name\":\"那些极品姐姐\",\"user\":\"zfjp1024\"},{\"name\":\"麻豆 girl\",\"user\":\"madougirl\"},{\"name\":\"黄果漫剧\",\"user\":\"hgmanju\"},{\"name\":\"海角 AV\",\"user\":\"hjgc0\"},{\"name\":\"无码 91\",\"user\":\"wmav91\"},{\"name\":\"收藏 AV\",\"user\":\"shoucangav\"}],\"relay\":\"https://tv506.ystv.top/api/tg\"}"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaTgAmns"
+  },
+  {
+   "id": "push_agent",
+   "name": "🛴推送┃播放",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_PushAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_PushAmns"
+  },
+  {
+   "id": "MyAll",
+   "name": "📁资源┃中心",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_MyAllAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_MyAllAmns"
+  },
+  {
+   "id": "zakajavdb",
+   "name": "🔞JAVDB┃磁力自动离线",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaJavdbAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaJavdbAmns"
+  },
+  {
+   "id": "zakajavbus",
+   "name": "🔞JAVBUS┃磁力自动离线",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaJavbusAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaJavbusAmns"
+  },
+  {
+   "id": "hongguo",
+   "name": "🍎红果短剧·听书┃官方直采+自建朗读",
+   "type": "animeSource",
+   "site": {
+    "domain": "hongguoduanju.com",
+    "baseUrl": "https://hongguoduanju.com"
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaHongguoAmns",
+    "ext": "{\"host\":\"https://hongguoduanju.com\"}"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaHongguoAmns"
+  },
+  {
+   "id": "ZakaLiveTv",
+   "name": "📡电视直播┃110台",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaLiveTvAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaLiveTvAmns"
+  },
+  {
+   "id": "thdh",
+   "name": "🔞探花短视频┃thdh",
+   "type": "animeSource",
+   "site": {
+    "domain": "thdhhaj.xyz",
+    "baseUrl": "https://thdhhaj.xyz"
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaThdhApp",
+    "ext": "{\"host\":\"https://thdhhaj.xyz\",\"brand\":\"🔞 探花短视频\",\"tg\":\"https://t.me/+3t5XRPPo9mlkZDRl\"}"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaThdhApp"
+  },
+  {
+   "id": "qishe",
+   "name": "🔞妻社┃qishe",
+   "type": "animeSource",
+   "site": {
+    "domain": "qs.qsh52693.org.cn",
+    "baseUrl": "https://qs.qsh52693.org.cn"
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaQiSheAmns",
+    "ext": "{\"host\":\"https://qs.qsh52693.org.cn\",\"brand\":\"🔞 妻社\",\"tg\":\"https://t.me/+3t5XRPPo9mlkZDRl\"}"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaQiSheAmns"
+  },
+  {
+   "id": "ZakaHjApp",
+   "name": "🔞海角社区┃App版",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaHjAppAmns",
+    "ext": "{\"brand\":\"🔞 海角社区App\",\"tg\":\"https://t.me/+3t5XRPPo9mlkZDRl\"}"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaHjAppAmns"
+  },
+  {
+   "id": "Zaka17rip",
+   "name": "🔞17rip┃底部导航分类",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_Zaka17ripAmns",
+    "ext": "{\"brand\":\"🔞 17rip\",\"tg\":\"https://t.me/+3t5XRPPo9mlkZDRl\"}"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_Zaka17ripAmns"
+  },
+  {
+   "id": "ZakaJavPlay",
+   "name": "🔞JavPlay┃免登录720",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaJa6playAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaJa6playAmns"
+  },
+  {
+   "id": "ZakaJavguru",
+   "name": "🔞JavGuru┃六线自动切",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaJavguruAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaJavguruAmns"
+  },
+  {
+   "id": "Zaka52av",
+   "name": "🔞52AV┃華語論壇",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_Zaka52avAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_Zaka52avAmns"
+  },
+  {
+   "id": "missavt",
+   "name": "🔞MissAVt┃原生",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaMissavtAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaMissavtAmns"
+  },
+  {
+   "id": "hgkpz",
+   "name": "🔞黄瓜┃黄瓜看片",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_ZakaHgkpzAmns",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_ZakaHgkpzAmns"
+  },
+  {
+   "id": "Wukong",
+   "name": "🔞悟空传媒",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_Wukong",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_Wukong"
+  },
+  {
+   "id": "Chengren91",
+   "name": "🔞91成人",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_Chengren91",
+    "ext": ""
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_Chengren91"
+  },
+  {
+   "id": "go_tingshu",
+   "name": "听书",
+   "type": "animeSource",
+   "site": {
+    "domain": "",
+    "baseUrl": ""
+   },
+   "parser": {
+    "type": "jar"
+   },
+   "spiderEngine": {
+    "kind": "jar",
+    "asset": "assets/jars/zakatv.jar",
+    "api": "csp_TingShu",
+    "ext": "{}"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 jar · csp_TingShu"
+  },
+  {
+   "id": "91crdjai",
+   "name": "🔞91成人短剧",
+   "type": "animeSource",
+   "site": {
+    "domain": "91crdjai.com",
+    "baseUrl": "https://91crdjai.com"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/91crdjai.py",
+    "sourceRef": "asset:assets/py_spiders/91crdjai.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · 91crdjai；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "91sanji",
+   "name": "🔞91三级",
+   "type": "animeSource",
+   "site": {
+    "domain": "91sanji.com",
+    "baseUrl": "https://91sanji.com"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/91sanji.py",
+    "sourceRef": "asset:assets/py_spiders/91sanji.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · 91sanji；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "chinaxjx",
+   "name": "🔞中国X站精选",
+   "type": "animeSource",
+   "site": {
+    "domain": "chinaxselecla08.xyz",
+    "baseUrl": "https://chinaxselecla08.xyz"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/chinaxjx.py",
+    "sourceRef": "asset:assets/py_spiders/chinaxjx.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · chinaxjx；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "ddys",
+   "name": "低端影视",
+   "type": "animeSource",
+   "site": {
+    "domain": "ddys.io",
+    "baseUrl": "https://ddys.io"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/ddys.py",
+    "sourceRef": "asset:assets/py_spiders/ddys.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · ddys；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "guipian",
+   "name": "鬼片网",
+   "type": "animeSource",
+   "site": {
+    "domain": "guipianwu.com",
+    "baseUrl": "https://guipianwu.com"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/guipian.py",
+    "sourceRef": "asset:assets/py_spiders/guipian.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · guipian；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "guzhuang",
+   "name": "🔞古装AI",
+   "type": "animeSource",
+   "site": {
+    "domain": "5g.guzhuangai8.cc",
+    "baseUrl": "https://5g.guzhuangai8.cc"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/guzhuang.py",
+    "sourceRef": "asset:assets/py_spiders/guzhuang.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · guzhuang；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "hbook",
+   "name": "🔞HBook",
+   "type": "animeSource",
+   "site": {
+    "domain": "hbook.tv",
+    "baseUrl": "https://hbook.tv"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/hbook.py",
+    "sourceRef": "asset:assets/py_spiders/hbook.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · hbook；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "hduanju",
+   "name": "🔞H-短剧",
+   "type": "animeSource",
+   "site": {
+    "domain": "xiaonverjtx.click",
+    "baseUrl": "https://xiaonverjtx.click"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/hduanju.py",
+    "sourceRef": "asset:assets/py_spiders/hduanju.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · hduanju；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "heitaoduanju",
+   "name": "🔞黑桃短剧",
+   "type": "animeSource",
+   "site": {
+    "domain": "wap.heitaoduanju7.cc",
+    "baseUrl": "https://wap.heitaoduanju7.cc"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/heitaoduanju.py",
+    "sourceRef": "asset:assets/py_spiders/heitaoduanju.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · heitaoduanju；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "henhenlu",
+   "name": "🔞狠狠撸",
+   "type": "animeSource",
+   "site": {
+    "domain": "hhlu2127.lol",
+    "baseUrl": "https://hhlu2127.lol"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/henhenlu.py",
+    "sourceRef": "asset:assets/py_spiders/henhenlu.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · henhenlu；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "herexxx",
+   "name": "🔞HereXXX",
+   "type": "animeSource",
+   "site": {
+    "domain": "herexxx.com",
+    "baseUrl": "https://herexxx.com"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/herexxx.py",
+    "sourceRef": "asset:assets/py_spiders/herexxx.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · herexxx；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "hgai",
+   "name": "🔞黄瓜AI短剧",
+   "type": "animeSource",
+   "site": {
+    "domain": "hgai8.cc",
+    "baseUrl": "https://hgai8.cc"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/hgai.py",
+    "sourceRef": "asset:assets/py_spiders/hgai.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · hgai；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "hgaidj",
+   "name": "🔞黄果AI短剧",
+   "type": "animeSource",
+   "site": {
+    "domain": "hgaidjzun.lol",
+    "baseUrl": "https://hgaidjzun.lol"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/hgaidj.py",
+    "sourceRef": "asset:assets/py_spiders/hgaidj.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · hgaidj；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "hghub",
+   "name": "🔞HGhub",
+   "type": "animeSource",
+   "site": {
+    "domain": "huangguoai.com",
+    "baseUrl": "https://huangguoai.com"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/hghub.py",
+    "sourceRef": "asset:assets/py_spiders/hghub.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · hghub；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "hgtvim",
+   "name": "🔞黄果短剧HGTV",
+   "type": "animeSource",
+   "site": {
+    "domain": "hgtv.im",
+    "baseUrl": "https://hgtv.im"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/hgtvim.py",
+    "sourceRef": "asset:assets/py_spiders/hgtvim.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · hgtvim；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "hohoj",
+   "name": "🔞好好J",
+   "type": "animeSource",
+   "site": {
+    "domain": "hohoj.tv",
+    "baseUrl": "https://hohoj.tv"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/hohoj.py",
+    "sourceRef": "asset:assets/py_spiders/hohoj.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · hohoj；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "hongluo",
+   "name": "🔞红裸短剧（成人）",
+   "type": "animeSource",
+   "site": {
+    "domain": "hongluo.co",
+    "baseUrl": "https://hongluo.co"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/hongluo.py",
+    "sourceRef": "asset:assets/py_spiders/hongluo.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · hongluo；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "hongxing",
+   "name": "🔞红杏",
+   "type": "animeSource",
+   "site": {
+    "domain": "7p-r5-n.hongxingav.xyz",
+    "baseUrl": "https://7p-r5-n.hongxingav.xyz"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/hongxing.py",
+    "sourceRef": "asset:assets/py_spiders/hongxing.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · hongxing；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "hongyan",
+   "name": "🔞红颜AI短剧",
+   "type": "animeSource",
+   "site": {
+    "domain": "1104.hyaidj221.lol",
+    "baseUrl": "https://1104.hyaidj221.lol"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/hongyan.py",
+    "sourceRef": "asset:assets/py_spiders/hongyan.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · hongyan；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "huai",
+   "name": "🔞欢爱",
+   "type": "animeSource",
+   "site": {
+    "domain": "sjgyoptiq.hjfwoz.com",
+    "baseUrl": "https://sjgyoptiq.hjfwoz.com"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/huai.py",
+    "sourceRef": "asset:assets/py_spiders/huai.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · huai；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "huangduanju",
+   "name": "🔞黄.短剧",
+   "type": "animeSource",
+   "site": {
+    "domain": "hpkspvynq.buzz",
+    "baseUrl": "https://hpkspvynq.buzz"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/huangduanju.py",
+    "sourceRef": "asset:assets/py_spiders/huangduanju.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · huangduanju；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "huangguazy",
+   "name": "🔞黄瓜资源",
+   "type": "animeSource",
+   "site": {
+    "domain": "wap.huangguazy7.cc",
+    "baseUrl": "https://wap.huangguazy7.cc"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/huangguazy.py",
+    "sourceRef": "asset:assets/py_spiders/huangguazy.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · huangguazy；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "huangguomanju",
+   "name": "🔞黄果漫剧",
+   "type": "animeSource",
+   "site": {
+    "domain": "hgxml.00api-agy5u.com",
+    "baseUrl": "https://hgxml.00api-agy5u.com"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/huangguomanju.py",
+    "sourceRef": "asset:assets/py_spiders/huangguomanju.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · huangguomanju；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "huangguotv",
+   "name": "🔞黄果TV短剧",
+   "type": "animeSource",
+   "site": {
+    "domain": "huangguotv.com",
+    "baseUrl": "https://huangguotv.com"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/huangguotv.py",
+    "sourceRef": "asset:assets/py_spiders/huangguotv.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · huangguotv；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "huangju",
+   "name": "🔞剧果",
+   "type": "animeSource",
+   "site": {
+    "domain": "huangju.net",
+    "baseUrl": "https://huangju.net"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/huangju.py",
+    "sourceRef": "asset:assets/py_spiders/huangju.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · huangju；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "japanwhores",
+   "name": "🔞Japan Whores",
+   "type": "animeSource",
+   "site": {
+    "domain": "japan-whores.com",
+    "baseUrl": "https://japan-whores.com"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/japanwhores.py",
+    "sourceRef": "asset:assets/py_spiders/japanwhores.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · japanwhores；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "jav188",
+   "name": "🔞AV18.Live",
+   "type": "animeSource",
+   "site": {
+    "domain": "jav188.net",
+    "baseUrl": "https://jav188.net"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/jav188.py",
+    "sourceRef": "asset:assets/py_spiders/jav188.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · jav188；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "javdino",
+   "name": "🔞JavDino",
+   "type": "animeSource",
+   "site": {
+    "domain": "javdino.com",
+    "baseUrl": "https://javdino.com"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/javdino.py",
+    "sourceRef": "asset:assets/py_spiders/javdino.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · javdino；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "javfun",
+   "name": "🔞JJavFun",
+   "type": "animeSource",
+   "site": {
+    "domain": "en.javfun.me",
+    "baseUrl": "https://en.javfun.me"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/javfun.py",
+    "sourceRef": "asset:assets/py_spiders/javfun.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · javfun；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "javgg",
+   "name": "🔞JavGG",
+   "type": "animeSource",
+   "site": {
+    "domain": "javgg.net",
+    "baseUrl": "https://javgg.net"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/javgg.py",
+    "sourceRef": "asset:assets/py_spiders/javgg.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · javgg；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "javhdtube",
+   "name": "🔞JAVHDTube",
+   "type": "animeSource",
+   "site": {
+    "domain": "javhdtube.com",
+    "baseUrl": "https://javhdtube.com"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/javhdtube.py",
+    "sourceRef": "asset:assets/py_spiders/javhdtube.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · javhdtube；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "javmit",
+   "name": "🔞JAVMIT",
+   "type": "animeSource",
+   "site": {
+    "domain": "javmit.com",
+    "baseUrl": "https://javmit.com"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/javmit.py",
+    "sourceRef": "asset:assets/py_spiders/javmit.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · javmit；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "javsiri",
+   "name": "🔞JAVSiri",
+   "type": "animeSource",
+   "site": {
+    "domain": "javsiri.cc",
+    "baseUrl": "https://javsiri.cc"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/javsiri.py",
+    "sourceRef": "asset:assets/py_spiders/javsiri.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · javsiri；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "javtiful",
+   "name": "🔞Javtiful┃JAV视频",
+   "type": "animeSource",
+   "site": {
+    "domain": "javtiful.com",
+    "baseUrl": "https://javtiful.com"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/javtiful.py",
+    "sourceRef": "asset:assets/py_spiders/javtiful.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · javtiful；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "javtsunami",
+   "name": "🔞JAV Tsunami",
+   "type": "animeSource",
+   "site": {
+    "domain": "javtsunami.com",
+    "baseUrl": "https://javtsunami.com"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/javtsunami.py",
+    "sourceRef": "asset:assets/py_spiders/javtsunami.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · javtsunami；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "jin18",
+   "name": "🔞18禁乐园",
+   "type": "animeSource",
+   "site": {
+    "domain": "18jin1109.lol",
+    "baseUrl": "https://18jin1109.lol"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/jin18.py",
+    "sourceRef": "asset:assets/py_spiders/jin18.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · jin18；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "jiuse",
+   "name": "🔞九色",
+   "type": "animeSource",
+   "site": {
+    "domain": "jiusequ.cyou",
+    "baseUrl": "https://jiusequ.cyou"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/jiuse.py",
+    "sourceRef": "asset:assets/py_spiders/jiuse.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · jiuse；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "jiuseduanju",
+   "name": "🔞九色短剧",
+   "type": "animeSource",
+   "site": {
+    "domain": "www.jiuseai.top",
+    "baseUrl": "https://www.jiuseai.top"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/jiuseduanju.py",
+    "sourceRef": "asset:assets/py_spiders/jiuseduanju.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · jiuseduanju；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "jptt",
+   "name": "🔞JPTT禁片天堂",
+   "type": "animeSource",
+   "site": {
+    "domain": "jptt.tv",
+    "baseUrl": "https://jptt.tv"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/jptt.py",
+    "sourceRef": "asset:assets/py_spiders/jptt.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · jptt；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "kissjav",
+   "name": "🔞KissJAV",
+   "type": "animeSource",
+   "site": {
+    "domain": "kissjav.li",
+    "baseUrl": "https://kissjav.li"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/kissjav.py",
+    "sourceRef": "asset:assets/py_spiders/kissjav.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · kissjav；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "klxq",
+   "name": "🔞快乐星球",
+   "type": "animeSource",
+   "site": {
+    "domain": "klxq1141.lol",
+    "baseUrl": "https://klxq1141.lol"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/klxq.py",
+    "sourceRef": "asset:assets/py_spiders/klxq.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · klxq；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "koreanporn",
+   "name": "🔞Korean Porn Movie",
+   "type": "animeSource",
+   "site": {
+    "domain": "koreanpornmovie.com",
+    "baseUrl": "https://koreanpornmovie.com"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/koreanporn.py",
+    "sourceRef": "asset:assets/py_spiders/koreanporn.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · koreanporn；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "luoliai",
+   "name": "🔞萝莉AI短剧",
+   "type": "animeSource",
+   "site": {
+    "domain": "luoliai.cc",
+    "baseUrl": "https://luoliai.cc"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/luoliai.py",
+    "sourceRef": "asset:assets/py_spiders/luoliai.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · luoliai；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "madao",
+   "name": "🔞麻豆傳媒",
+   "type": "animeSource",
+   "site": {
+    "domain": "Madaoavmodv026.xyz",
+    "baseUrl": "https://Madaoavmodv026.xyz"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/madao.py",
+    "sourceRef": "asset:assets/py_spiders/madao.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · madao；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "madou",
+   "name": "🔞2048成人短剧",
+   "type": "animeSource",
+   "site": {
+    "domain": "madouai.xyz",
+    "baseUrl": "https://madouai.xyz"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/madou.py",
+    "sourceRef": "asset:assets/py_spiders/madou.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · madou；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "mianfeiai",
+   "name": "🔞免费AI短剧",
+   "type": "animeSource",
+   "site": {
+    "domain": "abcdefgh.xingkongtuieee.cc",
+    "baseUrl": "https://abcdefgh.xingkongtuieee.cc"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/mianfeiai.py",
+    "sourceRef": "asset:assets/py_spiders/mianfeiai.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · mianfeiai；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "mose365",
+   "name": "🔞魔色365",
+   "type": "animeSource",
+   "site": {
+    "domain": "exwxfmd4.work",
+    "baseUrl": "https://exwxfmd4.work"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/mose365.py",
+    "sourceRef": "asset:assets/py_spiders/mose365.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · mose365；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "muzi",
+   "name": "🔞母子视频",
+   "type": "animeSource",
+   "site": {
+    "domain": "web.mzsp1.cc",
+    "baseUrl": "https://web.mzsp1.cc"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/muzi.py",
+    "sourceRef": "asset:assets/py_spiders/muzi.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · muzi；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "mythav",
+   "name": "🔞MythAV",
+   "type": "animeSource",
+   "site": {
+    "domain": "sdyoof.asia",
+    "baseUrl": "https://sdyoof.asia"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/mythav.py",
+    "sourceRef": "asset:assets/py_spiders/mythav.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · mythav；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "nvdi",
+   "name": "🔞女帝",
+   "type": "animeSource",
+   "site": {
+    "domain": "greplhggmqxb8hcj.nvdi81ptfe3lhved.com",
+    "baseUrl": "https://greplhggmqxb8hcj.nvdi81ptfe3lhved.com"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/nvdi.py",
+    "sourceRef": "asset:assets/py_spiders/nvdi.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · nvdi；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "pachub",
+   "name": "🔞PacHub",
+   "type": "animeSource",
+   "site": {
+    "domain": "pachub.net",
+    "baseUrl": "https://pachub.net"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/pachub.py",
+    "sourceRef": "asset:assets/py_spiders/pachub.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · pachub；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "pandatv",
+   "name": "🔞PANDATV",
+   "type": "animeSource",
+   "site": {
+    "domain": "pandatv1346.lol",
+    "baseUrl": "https://pandatv1346.lol"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/pandatv.py",
+    "sourceRef": "asset:assets/py_spiders/pandatv.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · pandatv；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "porna91",
+   "name": "🔞91porna",
+   "type": "animeSource",
+   "site": {
+    "domain": "91porna.com",
+    "baseUrl": "https://91porna.com"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/porna91.py",
+    "sourceRef": "asset:assets/py_spiders/porna91.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · porna91；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "px8x",
+   "name": "🔞Px8x",
+   "type": "animeSource",
+   "site": {
+    "domain": "8xx6.lol",
+    "baseUrl": "https://8xx6.lol"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/px8x.py",
+    "sourceRef": "asset:assets/py_spiders/px8x.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · px8x；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "qingkong",
+   "name": "青空次元",
+   "type": "animeSource",
+   "site": {
+    "domain": "www.sorani.net",
+    "baseUrl": "https://www.sorani.net"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/qingkong.py",
+    "sourceRef": "asset:assets/py_spiders/qingkong.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · qingkong；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "roshy",
+   "name": "🔞Roshy┃日系无码",
+   "type": "animeSource",
+   "site": {
+    "domain": "roshy.tv",
+    "baseUrl": "https://roshy.tv"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/roshy.py",
+    "sourceRef": "asset:assets/py_spiders/roshy.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · roshy；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "rscg91",
+   "name": "🔞91人兽吃瓜",
+   "type": "animeSource",
+   "site": {
+    "domain": "jcyh-gvz-nigo.obbplmm26y102.cc",
+    "baseUrl": "https://jcyh-gvz-nigo.obbplmm26y102.cc"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/rscg91.py",
+    "sourceRef": "asset:assets/py_spiders/rscg91.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · rscg91；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "senzuri",
+   "name": "🔞Senzuri Tube",
+   "type": "animeSource",
+   "site": {
+    "domain": "senzuri.tube",
+    "baseUrl": "https://senzuri.tube"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/senzuri.py",
+    "sourceRef": "asset:assets/py_spiders/senzuri.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · senzuri；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "sexkbj",
+   "name": "🔞SexKbj",
+   "type": "animeSource",
+   "site": {
+    "domain": "sexkbj.com",
+    "baseUrl": "https://sexkbj.com"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/sexkbj.py",
+    "sourceRef": "asset:assets/py_spiders/sexkbj.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · sexkbj；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "shaofu",
+   "name": "🔞少妇·短剧AV",
+   "type": "animeSource",
+   "site": {
+    "domain": "www.shaofudj.top",
+    "baseUrl": "https://www.shaofudj.top"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/shaofu.py",
+    "sourceRef": "asset:assets/py_spiders/shaofu.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · shaofu；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "shunvqu",
+   "name": "🔞熟女群",
+   "type": "animeSource",
+   "site": {
+    "domain": "wap.snq2.cc",
+    "baseUrl": "https://wap.snq2.cc"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/shunvqu.py",
+    "sourceRef": "asset:assets/py_spiders/shunvqu.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · shunvqu；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "shunvwang",
+   "name": "🔞熟女网",
+   "type": "animeSource",
+   "site": {
+    "domain": "tv.shunvwang7.cc",
+    "baseUrl": "https://tv.shunvwang7.cc"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/shunvwang.py",
+    "sourceRef": "asset:assets/py_spiders/shunvwang.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · shunvwang；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "ssis",
+   "name": "🔞ssisJAV",
+   "type": "animeSource",
+   "site": {
+    "domain": "ssis1.cc",
+    "baseUrl": "https://ssis1.cc"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/ssis.py",
+    "sourceRef": "asset:assets/py_spiders/ssis.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · ssis；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "swagr",
+   "name": "🔞SWAG资源合集",
+   "type": "animeSource",
+   "site": {
+    "domain": "zi.ri511.xyz",
+    "baseUrl": "http://zi.ri511.xyz"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/swagr.py",
+    "sourceRef": "asset:assets/py_spiders/swagr.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · swagr；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "taiav",
+   "name": "🔞TaiAV",
+   "type": "animeSource",
+   "site": {
+    "domain": "taiav.com",
+    "baseUrl": "https://taiav.com"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/taiav.py",
+    "sourceRef": "asset:assets/py_spiders/taiav.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · taiav；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "tanhua91",
+   "name": "🔞九色",
+   "type": "animeSource",
+   "site": {
+    "domain": "www.91tanhua196.sbs",
+    "baseUrl": "https://www.91tanhua196.sbs"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/tanhua91.py",
+    "sourceRef": "asset:assets/py_spiders/tanhua91.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · tanhua91；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "taose",
+   "name": "🔞AI成人短剧1",
+   "type": "animeSource",
+   "site": {
+    "domain": "taosevfqz.lol",
+    "baseUrl": "https://taosevfqz.lol"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/taose.py",
+    "sourceRef": "asset:assets/py_spiders/taose.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · taose；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "theporny",
+   "name": "🔞thePorny",
+   "type": "animeSource",
+   "site": {
+    "domain": "theporny.com",
+    "baseUrl": "https://theporny.com"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/theporny.py",
+    "sourceRef": "asset:assets/py_spiders/theporny.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · theporny；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "tiktvod",
+   "name": "🔞TikTok成人版",
+   "type": "animeSource",
+   "site": {
+    "domain": "tiktvod01.xyz",
+    "baseUrl": "https://tiktvod01.xyz"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/tiktvod.py",
+    "sourceRef": "asset:assets/py_spiders/tiktvod.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · tiktvod；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "tinyav",
+   "name": "🔞TinyAV",
+   "type": "animeSource",
+   "site": {
+    "domain": "tinyavideo.com",
+    "baseUrl": "https://tinyavideo.com"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/tinyav.py",
+    "sourceRef": "asset:assets/py_spiders/tinyav.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · tinyav；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "tokyomotion",
+   "name": "🔞TokyoMotion",
+   "type": "animeSource",
+   "site": {
+    "domain": "www.tokyomotion.net",
+    "baseUrl": "https://www.tokyomotion.net"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/tokyomotion.py",
+    "sourceRef": "asset:assets/py_spiders/tokyomotion.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · tokyomotion；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "topjav",
+   "name": "🔞TopJAV",
+   "type": "animeSource",
+   "site": {
+    "domain": "topjav.tv",
+    "baseUrl": "https://topjav.tv"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/topjav.py",
+    "sourceRef": "asset:assets/py_spiders/topjav.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · topjav；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "toptv",
+   "name": "🔞TOPTV",
+   "type": "animeSource",
+   "site": {
+    "domain": "toptv1504.lol",
+    "baseUrl": "https://toptv1504.lol"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/toptv.py",
+    "sourceRef": "asset:assets/py_spiders/toptv.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · toptv；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "uudj",
+   "name": "🔞UU短剧",
+   "type": "animeSource",
+   "site": {
+    "domain": "e3-pvx-t0.uudjmusic.vip",
+    "baseUrl": "https://e3-pvx-t0.uudjmusic.vip"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/uudj.py",
+    "sourceRef": "asset:assets/py_spiders/uudj.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · uudj；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "vjav",
+   "name": "🔞VJAV",
+   "type": "animeSource",
+   "site": {
+    "domain": "vjav.com",
+    "baseUrl": "https://vjav.com"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/vjav.py",
+    "sourceRef": "asset:assets/py_spiders/vjav.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · vjav；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "x51",
+   "name": "🔞51X",
+   "type": "animeSource",
+   "site": {
+    "domain": "51xz.vip",
+    "baseUrl": "https://51xz.vip"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/x51.py",
+    "sourceRef": "asset:assets/py_spiders/x51.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · x51；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "xandaskday",
+   "name": "🔞AI不用钱",
+   "type": "animeSource",
+   "site": {
+    "domain": "xandaskday.aibyq.cc",
+    "baseUrl": "https://xandaskday.aibyq.cc"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/xandaskday.py",
+    "sourceRef": "asset:assets/py_spiders/xandaskday.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · xandaskday；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "xianxia",
+   "name": "🔞仙侠AI短剧",
+   "type": "animeSource",
+   "site": {
+    "domain": "home.xxaidj.cc",
+    "baseUrl": "https://home.xxaidj.cc"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/xianxia.py",
+    "sourceRef": "asset:assets/py_spiders/xianxia.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · xianxia；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "xingkongfuli",
+   "name": "🔞星空福利视频",
+   "type": "animeSource",
+   "site": {
+    "domain": "xksp1359.lol",
+    "baseUrl": "https://xksp1359.lol"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/xingkongfuli.py",
+    "sourceRef": "asset:assets/py_spiders/xingkongfuli.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · xingkongfuli；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "xlook",
+   "name": "🔞XLook中文大全",
+   "type": "animeSource",
+   "site": {
+    "domain": "zw.mmjvlook.top",
+    "baseUrl": "http://zw.mmjvlook.top"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/xlook.py",
+    "sourceRef": "asset:assets/py_spiders/xlook.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · xlook；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "yaguo",
+   "name": "芽果",
+   "type": "animeSource",
+   "site": {
+    "domain": "app.whjzjx.cn",
+    "baseUrl": "https://app.whjzjx.cn"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/yaguo.py",
+    "sourceRef": "asset:assets/py_spiders/yaguo.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · yaguo；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "yeguo",
+   "name": "🔞野果短剧",
+   "type": "animeSource",
+   "site": {
+    "domain": "yeguodj.com",
+    "baseUrl": "https://yeguodj.com"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/yeguo.py",
+    "sourceRef": "asset:assets/py_spiders/yeguo.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · yeguo；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "yiren",
+   "name": "🔞伊人AV",
+   "type": "animeSource",
+   "site": {
+    "domain": "yiren234.cc",
+    "baseUrl": "https://yiren234.cc"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/yiren.py",
+    "sourceRef": "asset:assets/py_spiders/yiren.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · yiren；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "yunmeng",
+   "name": "🔞云梦在线",
+   "type": "animeSource",
+   "site": {
+    "domain": "89-ew-e.yunmengv.shop",
+    "baseUrl": "https://89-ew-e.yunmengv.shop"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/yunmeng.py",
+    "sourceRef": "asset:assets/py_spiders/yunmeng.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · yunmeng；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "ywly",
+   "name": "🔞欲望乐园",
+   "type": "animeSource",
+   "site": {
+    "domain": "guohnsqj.hdyubao.cyou",
+    "baseUrl": "http://guohnsqj.hdyubao.cyou"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/ywly.py",
+    "sourceRef": "asset:assets/py_spiders/ywly.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · ywly；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "ywmm",
+   "name": "🔞高清开苞处女",
+   "type": "animeSource",
+   "site": {
+    "domain": "cc1k1k0k5k.18ywmmresi.buzz",
+    "baseUrl": "https://cc1k1k0k5k.18ywmmresi.buzz"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/ywmm.py",
+    "sourceRef": "asset:assets/py_spiders/ywmm.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · ywmm；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "zwdj",
+   "name": "🔞中文短剧网",
+   "type": "animeSource",
+   "site": {
+    "domain": "gczwfrusk.forum",
+    "baseUrl": "https://gczwfrusk.forum"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/zwdj.py",
+    "sourceRef": "asset:assets/py_spiders/zwdj.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · zwdj；校验：含 class Spider，核心方法 8/8"
+  },
+  {
+   "id": "zwwm",
+   "name": "🔞中文无码",
+   "type": "animeSource",
+   "site": {
+    "domain": "zwwmtekr.lol",
+    "baseUrl": "https://zwwmtekr.lol"
+   },
+   "parser": {
+    "type": "py"
+   },
+   "spiderEngine": {
+    "kind": "py",
+    "asset": "assets/py_spiders/zwwm.py",
+    "sourceRef": "asset:assets/py_spiders/zwwm.py"
+   },
+   "version": 1,
+   "enabled": true,
+   "note": "内置 py · zwwm；校验：含 class Spider，核心方法 8/8"
+  }
+ ]
+}

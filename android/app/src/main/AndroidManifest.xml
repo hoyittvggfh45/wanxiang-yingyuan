@@ -1,0 +1,213 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- 触觉反馈：设置/按钮震动（原生 Vibrator，不依赖系统「触摸反馈」设置） -->
+    <uses-permission android:name="android.permission.VIBRATE"/>
+    <!-- F2.C：本地内容导入所需存储/媒体权限（targetSdk 33+ 用 READ_MEDIA_*，旧版本回落 READ_EXTERNAL_STORAGE） -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32"
+        tools:ignore="ScopedStorage"/>
+    <!-- 保存图片到公共相册（Android 9- 直写 Pictures；10+ 走 MediaStore 免权限） -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28"/>
+    <!-- 后台播放 + 媒体通知：Android 14+ 前台服务类型与通知权限 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- 听书悬浮胶囊（灵动岛）：悬浮窗权限，须用户在系统设置页手动授权；
+         拿不到时诚实降级，只留通知栏控制 -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <!-- 应用内更新：Android 7+ 请求安装未知来源 APK 必需 -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <application
+        android:label="万象影院"
+        android:name="${applicationName}"
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true"
+        android:enableOnBackInvokedCallback="true">
+        <!-- 视频外接纹理在部分旧 GPU/驱动（Mali、旧 Adreno）上经 Impeller 渲染会
+             闪烁+花屏（无 Vulkan 设备落在成熟度更差的 Impeller OpenGL 后端），
+             且与解码方式无关——软解也救不了。回退 Skia 渲染。 -->
+        <meta-data
+            android:name="io.flutter.embedding.android.EnableImpeller"
+            android:value="false" />
+        <!-- super_clipboard：向系统剪贴板写入图片二进制所需的 ContentProvider -->
+        <provider
+            android:name="com.superlist.super_native_extensions.DataProvider"
+            android:authorities="com.wxyy.SuperClipboardDataProvider"
+            android:exported="true"
+            android:grantUriPermissions="true" >
+        </provider>
+
+        <!-- 应用内更新：APK 安装包经 FileProvider 共享给系统安装器 -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="com.wxyy.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:supportsPictureInPicture="true"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
+            <!-- Specifies an Android theme to apply to this Activity as soon as
+                 the Android process has started. This theme is visible to the user
+                 while the Flutter UI initializes. After that, this theme continues
+                 to determine the Window background behind the Flutter UI. -->
+            <meta-data
+              android:name="io.flutter.embedding.android.NormalTheme"
+              android:resource="@style/NormalTheme"
+              />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+            <!-- Bangumi OAuth 回调深链：bgm.tv 授权后跳回 wxyy://oauth/callback -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="wxyy"
+                    android:host="oauth"
+                    android:pathPrefix="/callback" />
+            </intent-filter>
+        </activity>
+        <!-- Don't delete the meta-data below.
+             This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+        <!-- 后台播放：声明 AudioService 前台服务类型（Android 14+ 必需），
+             与 audio_service 插件清单合并；mediaPlayback 类型避免被系统回收。 -->
+        <service
+            android:name="com.ryanheise.audioservice.AudioService"
+            android:foregroundServiceType="mediaPlayback"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MEDIA_BUTTON" />
+            </intent-filter>
+        </service>
+
+        <!-- 桌面小组件：单个 provider，按卡片实际尺寸在小/中/大三套布局间切换。
+             内容由 Flutter 侧算好后写入 SharedPreferences，原生只负责排版；
+             updatePeriodMillis=0 表示不做系统定时刷新（刷新由 App 侧数据变化驱动）。 -->
+        <receiver
+            android:name=".WanxiangWidgetProvider"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/wxyy_widget_info" />
+        </receiver>
+
+        <!-- 另外三种单一主题卡片：各自独立 provider，添加面板里直接可选。 -->
+        <receiver
+            android:name=".WanxiangUpdatesWidgetProvider"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/wxyy_widget_updates_info" />
+        </receiver>
+        <receiver
+            android:name=".WanxiangDownloadWidgetProvider"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/wxyy_widget_downloads_info" />
+        </receiver>
+        <receiver
+            android:name=".WanxiangStatsWidgetProvider"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/wxyy_widget_stats_info" />
+        </receiver>
+        <receiver
+            android:name=".WanxiangHeatmapWidgetProvider"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/wxyy_widget_heatmap_info" />
+        </receiver>
+        <receiver
+            android:name=".WanxiangBigNumberWidgetProvider"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/wxyy_widget_bignumber_info" />
+        </receiver>
+        <receiver
+            android:name=".WanxiangModulesWidgetProvider"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/wxyy_widget_modules_info" />
+        </receiver>
+        <receiver
+            android:name=".WanxiangStreakWidgetProvider"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/wxyy_widget_streak_info" />
+        </receiver>
+    </application>
+    <!-- Required to query activities that can process text, see:
+         https://developer.android.com/training/package-visibility and
+         https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.
+
+         In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT"/>
+            <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- 网页链接跳转（url_launcher 打开 http/https）：Android 11+ 包可见性
+             要求显式声明可处理的 VIEW 意图，否则 queryIntentActivities 返回空，
+             launchUrl 抛 PlatformException「Couldn't launch url」（对应 A3 链接跳转）。 -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="http" />
+        </intent>
+    </queries>
+</manifest>

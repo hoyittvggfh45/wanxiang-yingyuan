@@ -1,0 +1,37 @@
+{
+    "header": "{\"User-Agent\":\"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36\"}",
+    "enabled": true,
+    "bookSourceName": "百合会轻小说",
+    "ageRating": "general",
+    "bookSourceUrl": "https://www.yamibo.com",
+    "bookSourceType": 0,
+    "bookSourceGroup": "内置书源",
+    "bookSourceComment": "百合会(yamibo)动漫之家轻小说区。搜索需登录，故仅提供「发现-最新更新」浏览入口；书籍详情与章节正文均无需登录。",
+    "exploreUrl": "最新更新::https://www.yamibo.com/novel/latest?q=1",
+    "ruleExplore": {
+        "bookList": "tbody tr",
+        "bookName": "tag.a.0@text",
+        "bookUrl": "tag.a.0@href",
+        "bookAuthor": "a[href*=/user/space]@text",
+        "bookLastChapter": "tag.a.1@text"
+    },
+    "ruleBookInfo": {
+        "name": "tag.h3.0@text",
+        "author": "h5@text",
+        "coverUrl": "img[src*=covern]@src",
+        "intro": "#w0-collapse1 .panel-body@text",
+        "tocUrl": ""
+    },
+    "ruleToc": {
+        "chapterList": "a[href*=view-chapter]@href",
+        "chapterName": "@text",
+        "chapterUrl": "@href"
+    },
+    "ruleContent": {
+        "content": "#txt .panel-body@textNodes"
+    },
+    "display": {
+        "descZh": "百合会(yamibo)动漫之家轻小说区，提供「最新更新」浏览入口；书籍详情与正文无需登录。",
+        "descEn": "Yamibo light-novel section; browse latest updates. Book detail & content need no login."
+    }
+}

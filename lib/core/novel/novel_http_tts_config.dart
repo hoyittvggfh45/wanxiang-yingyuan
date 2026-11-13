@@ -1,0 +1,164 @@
+/// 在线 HTTP TTS 配置。
+///
+/// 用户自建或第三方 TTS 服务端点模板：URL 中支持占位符
+/// `{text}`（U 编码）、`{voice}`（音色 id）、`{rate}`（语速 0.5-2.0）。
+/// 可选角色 → 音色映射（多角色：分句器判出的角色名映射到具体 voice id，
+/// 未匹配角色回退默认音色）。
+/// 持久化于 SharedPreferences（key: `novel_http_tts_config_v1`）。
+library;
+
+import 'dart:convert';
+
+import '../comic/models/reader_preferences.dart'
+    show PrefsBackend, SharedPrefsBackend;
+
+/// 在线 TTS 配置。
+class NovelHttpTtsConfig {
+  /// 是否启用在线 TTS（false = 继续使用 flutter_tts 离线引擎）。
+  final bool enabled;
+
+  /// 合成通道：`custom`（自定义 HTTP 端点模板，默认）或
+  /// `edge`（内置 Edge 在线语音，无需自建服务）。
+  final String provider;
+
+  /// URL 模板，占位符：{text} / {voice} / {rate}（provider == custom 用）。
+  final String urlTemplate;
+
+  /// 默认音色 id（模板 {voice} 未映射角色时的回退值）。
+  final String defaultVoice;
+
+  /// 旁白专用音色（空 = 回落 [defaultVoice]）。
+  final String narratorVoice;
+
+  /// 男性角色兜底音色（对白角色未绑定且判为男声时使用；空 = 回落默认）。
+  final String maleVoice;
+
+  /// 女性角色兜底音色（同上）。
+  final String femaleVoice;
+
+  /// 角色 → 音色 id 映射（多角色）。
+  final Map<String, String> voiceByRole;
+
+  /// 预下载并发数（1-8，Semaphore 上限）。
+  final int concurrency;
+
+  /// 连续合成失败达到此数后停止本轮朗读（默认 3）。
+  final int maxConsecutiveFailures;
+
+  /// 单句失败时是否「静音占位降级」：跳过该句但继续朗读剩余句。
+  final bool silentPlaceholderOnFailure;
+
+  const NovelHttpTtsConfig({
+    this.enabled = false,
+    this.provider = 'custom',
+    this.urlTemplate = '',
+    this.defaultVoice = '',
+    this.narratorVoice = '',
+    this.maleVoice = '',
+    this.femaleVoice = '',
+    this.voiceByRole = const <String, String>{},
+    this.concurrency = 2,
+    this.maxConsecutiveFailures = 3,
+    this.silentPlaceholderOnFailure = true,
+  });
+
+  NovelHttpTtsConfig copyWith({
+    bool? enabled,
+    String? provider,
+    String? urlTemplate,
+    String? defaultVoice,
+    String? narratorVoice,
+    String? maleVoice,
+    String? femaleVoice,
+    Map<String, String>? voiceByRole,
+    int? concurrency,
+    int? maxConsecutiveFailures,
+    bool? silentPlaceholderOnFailure,
+  }) {
+    return NovelHttpTtsConfig(
+      enabled: enabled ?? this.enabled,
+      provider: provider ?? this.provider,
+      urlTemplate: urlTemplate ?? this.urlTemplate,
+      defaultVoice: defaultVoice ?? this.defaultVoice,
+      narratorVoice: narratorVoice ?? this.narratorVoice,
+      maleVoice: maleVoice ?? this.maleVoice,
+      femaleVoice: femaleVoice ?? this.femaleVoice,
+      voiceByRole: voiceByRole ?? this.voiceByRole,
+      concurrency: concurrency ?? this.concurrency,
+      maxConsecutiveFailures:
+          maxConsecutiveFailures ?? this.maxConsecutiveFailures,
+      silentPlaceholderOnFailure:
+          silentPlaceholderOnFailure ?? this.silentPlaceholderOnFailure,
+    );
+  }
+
+  /// 按角色解析音色：命中映射表取专属音色，否则回退默认音色。
+  ///
+  /// 旧版兼容入口（仅含「角色映射→默认」两级）；完整多级路由见
+  /// [NovelTtsRouter]（角色卡绑定→映射→性别槽→旁白槽→默认）。
+  String voiceForRole(String role) {
+    if (role.isEmpty) return defaultVoice;
+    return voiceByRole[role] ?? defaultVoice;
+  }
+
+  /// 是否走内置 Edge 在线语音（provider == edge）。
+  bool get isEdge => provider == 'edge';
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'enabled': enabled,
+        'provider': provider,
+        'urlTemplate': urlTemplate,
+        'defaultVoice': defaultVoice,
+        'narratorVoice': narratorVoice,
+        'maleVoice': maleVoice,
+        'femaleVoice': femaleVoice,
+        'voiceByRole': voiceByRole,
+        'concurrency': concurrency,
+        'maxConsecutiveFailures': maxConsecutiveFailures,
+        'silentPlaceholderOnFailure': silentPlaceholderOnFailure,
+      };
+
+  factory NovelHttpTtsConfig.fromJson(Map<String, dynamic> json) {
+    final rawMap = json['voiceByRole'];
+    return NovelHttpTtsConfig(
+      enabled: json['enabled'] as bool? ?? false,
+      provider: json['provider'] as String? ?? 'custom',
+      urlTemplate: json['urlTemplate'] as String? ?? '',
+      defaultVoice: json['defaultVoice'] as String? ?? '',
+      narratorVoice: json['narratorVoice'] as String? ?? '',
+      maleVoice: json['maleVoice'] as String? ?? '',
+      femaleVoice: json['femaleVoice'] as String? ?? '',
+      voiceByRole: rawMap is Map<String, dynamic>
+          ? rawMap.map((k, v) => MapEntry(k, v.toString()))
+          : const <String, String>{},
+      concurrency: (json['concurrency'] as num?)?.toInt().clamp(1, 8) ?? 2,
+      maxConsecutiveFailures:
+          (json['maxConsecutiveFailures'] as num?)?.toInt() ?? 3,
+      silentPlaceholderOnFailure:
+          json['silentPlaceholderOnFailure'] as bool? ?? true,
+    );
+  }
+}
+
+/// 配置持久化。
+class NovelHttpTtsConfigStore {
+  NovelHttpTtsConfigStore({PrefsBackend? backend})
+      : _backend = backend ?? const SharedPrefsBackend();
+
+  final PrefsBackend _backend;
+  static const String key = 'novel_http_tts_config_v1';
+
+  Future<NovelHttpTtsConfig> load() async {
+    final raw = await _backend.get(key);
+    if (raw == null || raw.isEmpty) return const NovelHttpTtsConfig();
+    try {
+      return NovelHttpTtsConfig.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    } on Object {
+      return const NovelHttpTtsConfig();
+    }
+  }
+
+  Future<void> save(NovelHttpTtsConfig config) async {
+    await _backend.set(key, jsonEncode(config.toJson()));
+  }
+}

@@ -1,0 +1,74 @@
+{
+    "header":  "{\"Referer\":\"https://m.biqubu3.com/\",\"User-Agent\":\"Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36\"}",
+    "enabledExplore":  true,
+    "enabled":  true,
+    "bookSourceName":  "笔趣阁",
+    "ageRating": "general",
+    "bookSourceUrl":  "https://m.biqubu3.com",
+    "bookSourceType":  0,
+    "exploreUrl":  "玄幻小说::https://m.biqubu3.com/xuanhuan/\n修真小说::https://m.biqubu3.com/xiuzhen/\n都市小说::https://m.biqubu3.com/dushi/\n历史小说::https://m.biqubu3.com/lishi/\n网游小说::https://m.biqubu3.com/wangyou/\n科幻小说::https://m.biqubu3.com/kehuan/\n言情小说::https://m.biqubu3.com/yanqing/",
+    "bookSourceGroup":  "内置书源",
+    "concurrentRate":  0,
+    "ruleSearch":  {
+                       "bookAuthor":  ".author@text",
+                       "bookList":  ".bookbox",
+                       "bookCoverUrl":  ".bookimg img@src",
+                       "bookKind":  "",
+                       "bookLastChapter":  ".update a@text",
+                       "bookName":  ".bookname a@text",
+                       "bookUrl":  ".bookname a@href"
+                   },
+    "parser":  {
+                   "type":  "hybrid",
+                   "overrides":  {
+                                     "content":  {
+                                                     "function":  "parseContent",
+                                                     "script":  "function parseContent(html, context) {\n  var raw = context.dom.queryHtml(html, \u0027#nr1\u0027);\n  if (!raw) raw = context.dom.queryHtml(html, \u0027#content\u0027);\n  if (!raw) return \u0027\u0027;\n  raw = raw.replace(/\u003cscript[\\\\s\\\\S]*?\u003c\\\\/script\u003e/g, \u0027\u0027);\n  raw = raw.replace(/\u003cins[\\\\s\\\\S]*?\u003c\\\\/ins\u003e/g, \u0027\u0027);\n  raw = raw.replace(/^笔奇部$|^上一章$|^目录$|^下一章$|^返回书页$|^返回$/gm, \u0027\u0027);\n  return context.content.clean(raw);\n}",
+                                                     "type":  "script"
+                                                 }
+                                 }
+               },
+    "enabledSearch":  true,
+    "ruleExplore":  {
+                        "bookLastChapter":  ".update a@text",
+                        "bookAuthor":  ".author@text",
+                        "bookList":  ".bookbox",
+                        "intro":  ".intro_line@text",
+                        "bookName":  ".bookname a@text",
+                        "bookKind":  "",
+                        "bookCoverUrl":  ".bookimg img@src",
+                        "bookUrl":  ".bookname a@href"
+                    },
+    "searchUrl":  "https://m.biqubu3.com/search.php?keyword={{key}}",
+    "ruleToc":  {
+                    "chapterList":  "a[href^=\"/book_\"][href$=\".html\"]",
+                    "chapterName":  "@text",
+                    "nextTocUrl":  "a:contains(下一页)@href",
+                    "chapterUrl":  "@href",
+                    "updateTime":  "span.time@text||.time@text",
+                    "chapterScope":  "bookDir",
+                    "excludeSelector": "[class*=\"latest\"],[class*=\"preview\"],[class*=\"tuijian\"],[id*=\"latest\"],[id*=\"preview\"]"
+                },
+    "ruleContent":  {
+                        "content":  "#nr1@html",
+                        "title":  "#nr_title@text",
+                        "nextContentUrl":  "a:contains(下一页)@href||a:contains(下一章)@href",
+                        "replaceRegex":  "^笔奇部$|^上一章$|^目录$|^下一章$|^返回书页$|^返回$|^下一页$|^上一页$"
+                    },
+    "bookSourceComment":  "笔趣阁类移动站，章节正文为纯 HTML，支持分页",
+    "ruleBookInfo":  {
+                         "updateTime":  "p:contains(更新)@text",
+                         "coverUrl":  ".block_img2 img@src",
+                         "tocUrl":  "a[href^=\"/book_\"][href$=\"/\"]@href",
+                         "intro":  ".intro_info@text",
+                         "lastChapter":  "p:contains(最新) a@text||.lastchapter@text",
+                         "kind":  "a[href^=\"/xuanhuan/\"]@text||a[href^=\"/xiuzhen/\"]@text||a[href^=\"/dushi/\"]@text||a[href^=\"/lishi/\"]@text||a[href^=\"/wangyou/\"]@text||a[href^=\"/kehuan/\"]@text||a[href^=\"/yanqing/\"]@text",
+                         "name":  "h1@text||h2@text",
+                         "author":  "p:contains(作者)@text||.author@text",
+                         "bookStatus":  "p:contains(状态) span@text||p:contains(状态)@text||.status@text"
+                     },
+    "display": {
+        "descZh": "笔趣阁综合网文站，支持玄幻/都市/言情等分类发现。",
+        "descEn": "Biquge multi-category web-novel source with genre browsing."
+    }
+}

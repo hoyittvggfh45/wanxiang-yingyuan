@@ -1,0 +1,2232 @@
+{
+  "id": "pms_m233",
+  "version": 14,
+  "name": "233动漫",
+  "type": "animeSource",
+  "responseType": "json",
+  "useWebview": true,
+  "site": {
+    "domain": "cn.233dm.com",
+    "baseUrl": "https://cn.233dm.com",
+    "mirrors": [
+      {
+        "name": "主站",
+        "domain": "cn.233dm.com",
+        "baseUrl": "https://cn.233dm.com"
+      }
+    ]
+  },
+  "parser": {
+    "type": "hybrid",
+    "overrides": {
+      "latest": {
+        "type": "builtin"
+      },
+      "search": {
+        "type": "webview-html"
+      },
+      "searchByActor": {
+        "type": "webview-html"
+      },
+      "searchByDirector": {
+        "type": "webview-html"
+      },
+      "show": {
+        "type": "webview-html"
+      },
+      "detail": {
+        "type": "builtin"
+      },
+      "category": {
+        "type": "builtin"
+      },
+      "episodes": {
+        "type": "builtin"
+      },
+      "video": {
+        "type": "webview",
+        "script": "(function(){\n  try {\n    var doc = document;\n    var m = doc.documentElement.outerHTML.match(/playData\\(\\s*['\"]([A-Za-z0-9+/=]+)['\"]\\s*,\\s*['\"]([0-9a-f]+)['\"]\\s*\\)/);\n    if (typeof playData === 'function' && m) {\n      var url = playData(m[1], m[2]);\n      if (url && /^https?:\\/\\/.+\\.(m3u8|mp4|webm)/i.test(url)) return url;\n    }\n    var f = doc.querySelector('iframe#MacPlayer, iframe#buffer, iframe[src*=\"/player/\"]');\n    var src = (f && f.getAttribute('src')) || '';\n    if (!src) {\n      var ifs = doc.querySelectorAll('iframe');\n      for (var i = 0; i < ifs.length; i++) {\n        var s = ifs[i].getAttribute('src') || '';\n        if (/player|v2player|cfhls/i.test(s)) { src = s; break; }\n      }\n    }\n    if (src && /\\/player\\/\\?url=/.test(src)) {\n      var abs = src.indexOf('http') === 0 ? src : location.origin + src;\n      // url= 为完整媒体直链（明文 m3u8 线）→ 保持 webview: 跳转，由播放器页\n      // 完成签名/去广告后再嗅探（链路已验证可用）。\n      // url= 为加密令牌（精品线）→ 不跳转：顶层导航上下文会被站点风控下发\n      // TikTok 广告占位；留在播放页靠嗅探链路在内嵌 iframe 上下文（真实内容\n      // 仅对该上下文下发）中捕获真实直链。\n      var mm = abs.match(/[?&]url=([^&]+)/);\n      var inner = mm ? decodeURIComponent(mm[1]) : '';\n      if (inner && /^https?:\\/\\//i.test(inner)) {\n        return 'webview:' + abs;\n      }\n      return '';\n    }\n    // video[src] 兜底必须带媒体扩展名：无扩展名地址多为广告占位/中转壳\n    // （站点风控对疑似机器人下发广告视频），当作解析结果会顶掉真直链。\n    var v = doc.querySelector('video[src]');\n    var vs = (v && v.getAttribute('src')) || '';\n    if (vs && /^https?:\\/\\/.+\\.(m3u8|m3u|mpd|mp4|webm|flv)/i.test(vs)) return vs;\n    return '';\n  } catch (e) { return ''; }\n})();"
+      },
+      "week": {
+        "type": "builtin"
+      }
+    }
+  },
+  "routes": {
+    "latest": {
+      "url": "/index.php/ajax/data/?mid=1&page={page}&limit=20",
+      "method": "get",
+      "responseType": "json"
+    },
+    "search": {
+      "url": "/search/{keyword}----------{page}---.html",
+      "method": "get",
+      "responseType": "html"
+    },
+    "searchByActor": {
+      "url": "/search/{keyword}----------{page}---.html",
+      "method": "get",
+      "responseType": "html"
+    },
+    "searchByDirector": {
+      "url": "/search/{keyword}----------{page}---.html",
+      "method": "get",
+      "responseType": "html"
+    },
+    "detail": {
+      "url": "{detailUrl}",
+      "method": "get",
+      "responseType": "html"
+    },
+    "category": {
+      "url": "/type/{category}.html",
+      "method": "get",
+      "responseType": "html"
+    },
+    "episodes": {
+      "url": "{detailUrl}",
+      "method": "get",
+      "responseType": "html"
+    },
+    "video": {
+      "url": "{url}",
+      "method": "get",
+      "responseType": "html"
+    },
+    "show": {
+      "url": "/show/{category}--{sort}-{genre}-----{page}---{year}.html",
+      "method": "get",
+      "responseType": "html"
+    },
+    "week": {
+      "url": "/week",
+      "method": "get",
+      "responseType": "html"
+    }
+  },
+  "selectors": {
+    "list": "$.list",
+    "id": "$.vod_id",
+    "title": "$.vod_name",
+    "cover": "$.vod_pic",
+    "detailUrl": "$.detail_link",
+    "status": "$.vod_remarks",
+    "tags": "$.vod_class",
+    "description": "$.vod_blurb",
+    "director": "$.vod_director",
+    "actors": "$.vod_actor",
+    "year": "$.vod_year",
+    "detail": {
+      "title": "h1.title",
+      "cover": "img.lazyload@data-original",
+      "description": "span.detail-content",
+      "status": "span[style*='red']",
+      "director": "//p[contains(text(),'导演：')]//a",
+      "actors": "//p[contains(text(),'声优：')]//a",
+      "tags": "substring-before(substring-after(//p[contains(text(),'类型：')],'类型：'),' /')",
+      "updatedAt": "substring-after(//p[contains(text(),'更新：')],'更新：')",
+      "year": "substring-after(//p[contains(text(),'年份：')],'年份：')"
+    },
+    "category": {
+      "list": "ul.JIHA_djfJghJ.clearfix li",
+      "id": "a[href*='/anime/']@href",
+      "title": "h4.title a",
+      "cover": "a[href*='/anime/']@data-original",
+      "detailUrl": "a[href*='/anime/']@href",
+      "status": "span.GDC_Fbfa b"
+    },
+    "episodes": {
+      "lineList": "ul.play-list-content",
+      "lineName": "a[data-toggle='tab']",
+      "list": "li a"
+    },
+    "video": "video@src",
+    "search": {
+      "list": "ul.JIHA_djfJghJ.clearfix li",
+      "id": "a[href*='/anime/']@href",
+      "title": "h4.title a",
+      "cover": "a[href*='/anime/']@data-original",
+      "detailUrl": "a[href*='/anime/']@href",
+      "status": "span.GDC_Fbfa b"
+    },
+    "show": {
+      "list": "ul.JIHA_djfJghJ.clearfix li",
+      "id": "a[href*='/anime/']@href",
+      "title": "h4.title a",
+      "cover": "a[href*='/anime/']@data-original",
+      "detailUrl": "a[href*='/anime/']@href",
+      "status": "span.GDC_Fbfa b"
+    },
+    "week": {
+      "dayBlocks": "ul.week-content",
+      "dayIndexAttr": "data-key",
+      "item": "li",
+      "id": "a[href*='/anime/']@href",
+      "title": "h4.title a",
+      "cover": "a[href*='/anime/']@data-original",
+      "detailUrl": "a[href*='/anime/']@href",
+      "status": "span.GDC_Fbfa b"
+    }
+  },
+  "category": {
+    "dynamicCategories": false,
+    "categoryEntries": [
+      {
+        "id": "",
+        "title": "全部"
+      },
+      {
+        "id": "1",
+        "title": "日漫"
+      },
+      {
+        "id": "2",
+        "title": "国漫"
+      },
+      {
+        "id": "3",
+        "title": "美漫"
+      },
+      {
+        "id": "4",
+        "title": "特摄"
+      },
+      {
+        "id": "5",
+        "title": "动画"
+      },
+      {
+        "id": "24",
+        "title": "剧场"
+      }
+    ]
+  },
+  "filters": {
+    "route": "show",
+    "defaults": {
+      "2": {
+        "sort": "hits",
+        "year": "2026"
+      }
+    },
+    "groups": [
+      {
+        "id": "year",
+        "title": "年份",
+        "route": "show",
+        "param": "year",
+        "options": [
+          {
+            "value": "2026",
+            "label": "2026"
+          },
+          {
+            "value": "2025",
+            "label": "2025"
+          },
+          {
+            "value": "2024",
+            "label": "2024"
+          },
+          {
+            "value": "2023",
+            "label": "2023"
+          },
+          {
+            "value": "2022",
+            "label": "2022"
+          },
+          {
+            "value": "2021",
+            "label": "2021"
+          },
+          {
+            "value": "2020",
+            "label": "2020"
+          },
+          {
+            "value": "2019",
+            "label": "2019"
+          },
+          {
+            "value": "2018",
+            "label": "2018"
+          },
+          {
+            "value": "2017",
+            "label": "2017"
+          },
+          {
+            "value": "2016",
+            "label": "2016"
+          },
+          {
+            "value": "2015",
+            "label": "2015"
+          },
+          {
+            "value": "2014",
+            "label": "2014"
+          },
+          {
+            "value": "2013",
+            "label": "2013"
+          },
+          {
+            "value": "2012",
+            "label": "2012"
+          },
+          {
+            "value": "2011",
+            "label": "2011"
+          },
+          {
+            "value": "2010",
+            "label": "2010"
+          },
+          {
+            "value": "2009",
+            "label": "2009"
+          },
+          {
+            "value": "2008",
+            "label": "2008"
+          },
+          {
+            "value": "2007",
+            "label": "2007"
+          },
+          {
+            "value": "2006",
+            "label": "2006"
+          },
+          {
+            "value": "2005",
+            "label": "2005"
+          },
+          {
+            "value": "2004",
+            "label": "2004"
+          },
+          {
+            "value": "2003",
+            "label": "2003"
+          },
+          {
+            "value": "2002",
+            "label": "2002"
+          },
+          {
+            "value": "2001",
+            "label": "2001"
+          },
+          {
+            "value": "2000",
+            "label": "2000"
+          }
+        ]
+      },
+      {
+        "id": "sort",
+        "title": "排序",
+        "route": "show",
+        "param": "sort",
+        "options": [
+          {
+            "value": "time",
+            "label": "时间"
+          },
+          {
+            "value": "hits",
+            "label": "人气"
+          },
+          {
+            "value": "score",
+            "label": "评分"
+          }
+        ]
+      }
+    ],
+    "byCategory": {
+      "1": [
+        {
+          "id": "genre",
+          "title": "剧情",
+          "route": "show",
+          "param": "genre",
+          "options": [
+            {
+              "value": "",
+              "label": "全部"
+            },
+            {
+              "value": "后宫",
+              "label": "后宫"
+            },
+            {
+              "value": "校园",
+              "label": "校园"
+            },
+            {
+              "value": "爱情",
+              "label": "爱情"
+            },
+            {
+              "value": "热血",
+              "label": "热血"
+            },
+            {
+              "value": "战斗",
+              "label": "战斗"
+            },
+            {
+              "value": "竞技",
+              "label": "竞技"
+            },
+            {
+              "value": "青春",
+              "label": "青春"
+            },
+            {
+              "value": "百合",
+              "label": "百合"
+            },
+            {
+              "value": "治愈",
+              "label": "治愈"
+            },
+            {
+              "value": "喜剧",
+              "label": "喜剧"
+            },
+            {
+              "value": "动作",
+              "label": "动作"
+            },
+            {
+              "value": "科幻",
+              "label": "科幻"
+            },
+            {
+              "value": "奇幻",
+              "label": "奇幻"
+            },
+            {
+              "value": "冒险",
+              "label": "冒险"
+            },
+            {
+              "value": "搞笑",
+              "label": "搞笑"
+            },
+            {
+              "value": "悬疑",
+              "label": "悬疑"
+            },
+            {
+              "value": "推理",
+              "label": "推理"
+            },
+            {
+              "value": "耽美",
+              "label": "耽美"
+            },
+            {
+              "value": "美少女",
+              "label": "美少女"
+            },
+            {
+              "value": "乙女向",
+              "label": "乙女向"
+            },
+            {
+              "value": "励志",
+              "label": "励志"
+            },
+            {
+              "value": "武侠",
+              "label": "武侠"
+            },
+            {
+              "value": "恐怖",
+              "label": "恐怖"
+            },
+            {
+              "value": "惊悚",
+              "label": "惊悚"
+            },
+            {
+              "value": "运动",
+              "label": "运动"
+            },
+            {
+              "value": "萝莉",
+              "label": "萝莉"
+            },
+            {
+              "value": "魔法",
+              "label": "魔法"
+            },
+            {
+              "value": "神魔",
+              "label": "神魔"
+            },
+            {
+              "value": "机战",
+              "label": "机战"
+            },
+            {
+              "value": "社会",
+              "label": "社会"
+            },
+            {
+              "value": "职场",
+              "label": "职场"
+            },
+            {
+              "value": "犯罪",
+              "label": "犯罪"
+            },
+            {
+              "value": "历史",
+              "label": "历史"
+            },
+            {
+              "value": "战争",
+              "label": "战争"
+            },
+            {
+              "value": "歌舞",
+              "label": "歌舞"
+            },
+            {
+              "value": "音乐",
+              "label": "音乐"
+            },
+            {
+              "value": "西部",
+              "label": "西部"
+            },
+            {
+              "value": "灾难",
+              "label": "灾难"
+            },
+            {
+              "value": "短片",
+              "label": "短片"
+            },
+            {
+              "value": "泡面番",
+              "label": "泡面番"
+            },
+            {
+              "value": "动画",
+              "label": "动画"
+            }
+          ]
+        },
+        {
+          "id": "year",
+          "title": "年份",
+          "route": "show",
+          "param": "year",
+          "options": [
+            {
+              "value": "2026",
+              "label": "2026"
+            },
+            {
+              "value": "2025",
+              "label": "2025"
+            },
+            {
+              "value": "2024",
+              "label": "2024"
+            },
+            {
+              "value": "2023",
+              "label": "2023"
+            },
+            {
+              "value": "2022",
+              "label": "2022"
+            },
+            {
+              "value": "2021",
+              "label": "2021"
+            },
+            {
+              "value": "2020",
+              "label": "2020"
+            },
+            {
+              "value": "2019",
+              "label": "2019"
+            },
+            {
+              "value": "2018",
+              "label": "2018"
+            },
+            {
+              "value": "2017",
+              "label": "2017"
+            },
+            {
+              "value": "2016",
+              "label": "2016"
+            },
+            {
+              "value": "2015",
+              "label": "2015"
+            },
+            {
+              "value": "2014",
+              "label": "2014"
+            },
+            {
+              "value": "2013",
+              "label": "2013"
+            },
+            {
+              "value": "2012",
+              "label": "2012"
+            },
+            {
+              "value": "2011",
+              "label": "2011"
+            },
+            {
+              "value": "2010",
+              "label": "2010"
+            },
+            {
+              "value": "2009",
+              "label": "2009"
+            },
+            {
+              "value": "2008",
+              "label": "2008"
+            },
+            {
+              "value": "2007",
+              "label": "2007"
+            },
+            {
+              "value": "2006",
+              "label": "2006"
+            },
+            {
+              "value": "2005",
+              "label": "2005"
+            },
+            {
+              "value": "2004",
+              "label": "2004"
+            },
+            {
+              "value": "2003",
+              "label": "2003"
+            },
+            {
+              "value": "2002",
+              "label": "2002"
+            },
+            {
+              "value": "2001",
+              "label": "2001"
+            },
+            {
+              "value": "2000",
+              "label": "2000"
+            }
+          ]
+        },
+        {
+          "id": "sort",
+          "title": "排序",
+          "route": "show",
+          "param": "sort",
+          "options": [
+            {
+              "value": "time",
+              "label": "时间"
+            },
+            {
+              "value": "hits",
+              "label": "人气"
+            },
+            {
+              "value": "score",
+              "label": "评分"
+            }
+          ]
+        }
+      ],
+      "2": [
+        {
+          "id": "genre",
+          "title": "剧情",
+          "route": "show",
+          "param": "genre",
+          "options": [
+            {
+              "value": "",
+              "label": "全部"
+            },
+            {
+              "value": "奇幻",
+              "label": "奇幻"
+            },
+            {
+              "value": "热血",
+              "label": "热血"
+            },
+            {
+              "value": "穿越",
+              "label": "穿越"
+            },
+            {
+              "value": "末日",
+              "label": "末日"
+            },
+            {
+              "value": "搞笑",
+              "label": "搞笑"
+            },
+            {
+              "value": "玄幻",
+              "label": "玄幻"
+            },
+            {
+              "value": "战斗",
+              "label": "战斗"
+            },
+            {
+              "value": "重生",
+              "label": "重生"
+            },
+            {
+              "value": "冒险",
+              "label": "冒险"
+            },
+            {
+              "value": "仙侠",
+              "label": "仙侠"
+            },
+            {
+              "value": "神魔",
+              "label": "神魔"
+            },
+            {
+              "value": "修仙",
+              "label": "修仙"
+            },
+            {
+              "value": "剧情",
+              "label": "剧情"
+            },
+            {
+              "value": "动作",
+              "label": "动作"
+            },
+            {
+              "value": "喜剧",
+              "label": "喜剧"
+            },
+            {
+              "value": "励志",
+              "label": "励志"
+            },
+            {
+              "value": "古风",
+              "label": "古风"
+            },
+            {
+              "value": "科幻",
+              "label": "科幻"
+            },
+            {
+              "value": "武侠",
+              "label": "武侠"
+            },
+            {
+              "value": "都市",
+              "label": "都市"
+            },
+            {
+              "value": "古装",
+              "label": "古装"
+            },
+            {
+              "value": "机战",
+              "label": "机战"
+            },
+            {
+              "value": "校园",
+              "label": "校园"
+            },
+            {
+              "value": "成长",
+              "label": "成长"
+            },
+            {
+              "value": "少儿",
+              "label": "少儿"
+            },
+            {
+              "value": "爱情",
+              "label": "爱情"
+            },
+            {
+              "value": "悬疑",
+              "label": "悬疑"
+            },
+            {
+              "value": "推理",
+              "label": "推理"
+            },
+            {
+              "value": "恐怖",
+              "label": "恐怖"
+            },
+            {
+              "value": "惊悚",
+              "label": "惊悚"
+            },
+            {
+              "value": "运动",
+              "label": "运动"
+            },
+            {
+              "value": "犯罪",
+              "label": "犯罪"
+            },
+            {
+              "value": "历史",
+              "label": "历史"
+            },
+            {
+              "value": "战争",
+              "label": "战争"
+            },
+            {
+              "value": "歌舞",
+              "label": "歌舞"
+            },
+            {
+              "value": "音乐",
+              "label": "音乐"
+            },
+            {
+              "value": "西部",
+              "label": "西部"
+            },
+            {
+              "value": "灾难",
+              "label": "灾难"
+            },
+            {
+              "value": "短片",
+              "label": "短片"
+            },
+            {
+              "value": "动画",
+              "label": "动画"
+            }
+          ]
+        },
+        {
+          "id": "year",
+          "title": "年份",
+          "route": "show",
+          "param": "year",
+          "options": [
+            {
+              "value": "2026",
+              "label": "2026"
+            },
+            {
+              "value": "2025",
+              "label": "2025"
+            },
+            {
+              "value": "2024",
+              "label": "2024"
+            },
+            {
+              "value": "2023",
+              "label": "2023"
+            },
+            {
+              "value": "2022",
+              "label": "2022"
+            },
+            {
+              "value": "2021",
+              "label": "2021"
+            },
+            {
+              "value": "2020",
+              "label": "2020"
+            },
+            {
+              "value": "2019",
+              "label": "2019"
+            },
+            {
+              "value": "2018",
+              "label": "2018"
+            },
+            {
+              "value": "2017",
+              "label": "2017"
+            },
+            {
+              "value": "2016",
+              "label": "2016"
+            },
+            {
+              "value": "2015",
+              "label": "2015"
+            },
+            {
+              "value": "2014",
+              "label": "2014"
+            },
+            {
+              "value": "2013",
+              "label": "2013"
+            },
+            {
+              "value": "2012",
+              "label": "2012"
+            },
+            {
+              "value": "2011",
+              "label": "2011"
+            },
+            {
+              "value": "2010",
+              "label": "2010"
+            },
+            {
+              "value": "2009",
+              "label": "2009"
+            },
+            {
+              "value": "2008",
+              "label": "2008"
+            },
+            {
+              "value": "2007",
+              "label": "2007"
+            },
+            {
+              "value": "2006",
+              "label": "2006"
+            },
+            {
+              "value": "2005",
+              "label": "2005"
+            },
+            {
+              "value": "2004",
+              "label": "2004"
+            },
+            {
+              "value": "2003",
+              "label": "2003"
+            },
+            {
+              "value": "2002",
+              "label": "2002"
+            },
+            {
+              "value": "2001",
+              "label": "2001"
+            },
+            {
+              "value": "2000",
+              "label": "2000"
+            }
+          ]
+        },
+        {
+          "id": "sort",
+          "title": "排序",
+          "route": "show",
+          "param": "sort",
+          "options": [
+            {
+              "value": "time",
+              "label": "时间"
+            },
+            {
+              "value": "hits",
+              "label": "人气"
+            },
+            {
+              "value": "score",
+              "label": "评分"
+            }
+          ]
+        }
+      ],
+      "3": [
+        {
+          "id": "genre",
+          "title": "剧情",
+          "route": "show",
+          "param": "genre",
+          "options": [
+            {
+              "value": "",
+              "label": "全部"
+            },
+            {
+              "value": "少儿",
+              "label": "少儿"
+            },
+            {
+              "value": "恶搞",
+              "label": "恶搞"
+            },
+            {
+              "value": "烧脑",
+              "label": "烧脑"
+            },
+            {
+              "value": "喜剧",
+              "label": "喜剧"
+            },
+            {
+              "value": "动作",
+              "label": "动作"
+            },
+            {
+              "value": "科幻",
+              "label": "科幻"
+            },
+            {
+              "value": "奇幻",
+              "label": "奇幻"
+            },
+            {
+              "value": "爱情",
+              "label": "爱情"
+            },
+            {
+              "value": "同性",
+              "label": "同性"
+            },
+            {
+              "value": "耽美",
+              "label": "耽美"
+            },
+            {
+              "value": "悬疑",
+              "label": "悬疑"
+            },
+            {
+              "value": "推理",
+              "label": "推理"
+            },
+            {
+              "value": "武侠",
+              "label": "武侠"
+            },
+            {
+              "value": "恐怖",
+              "label": "恐怖"
+            },
+            {
+              "value": "惊悚",
+              "label": "惊悚"
+            },
+            {
+              "value": "运动",
+              "label": "运动"
+            },
+            {
+              "value": "冒险",
+              "label": "冒险"
+            },
+            {
+              "value": "犯罪",
+              "label": "犯罪"
+            },
+            {
+              "value": "历史",
+              "label": "历史"
+            },
+            {
+              "value": "战争",
+              "label": "战争"
+            },
+            {
+              "value": "歌舞",
+              "label": "歌舞"
+            },
+            {
+              "value": "音乐",
+              "label": "音乐"
+            },
+            {
+              "value": "西部",
+              "label": "西部"
+            },
+            {
+              "value": "灾难",
+              "label": "灾难"
+            },
+            {
+              "value": "短片",
+              "label": "短片"
+            },
+            {
+              "value": "动画",
+              "label": "动画"
+            }
+          ]
+        },
+        {
+          "id": "year",
+          "title": "年份",
+          "route": "show",
+          "param": "year",
+          "options": [
+            {
+              "value": "2026",
+              "label": "2026"
+            },
+            {
+              "value": "2025",
+              "label": "2025"
+            },
+            {
+              "value": "2024",
+              "label": "2024"
+            },
+            {
+              "value": "2023",
+              "label": "2023"
+            },
+            {
+              "value": "2022",
+              "label": "2022"
+            },
+            {
+              "value": "2021",
+              "label": "2021"
+            },
+            {
+              "value": "2020",
+              "label": "2020"
+            },
+            {
+              "value": "2019",
+              "label": "2019"
+            },
+            {
+              "value": "2018",
+              "label": "2018"
+            },
+            {
+              "value": "2017",
+              "label": "2017"
+            },
+            {
+              "value": "2016",
+              "label": "2016"
+            },
+            {
+              "value": "2015",
+              "label": "2015"
+            },
+            {
+              "value": "2014",
+              "label": "2014"
+            },
+            {
+              "value": "2013",
+              "label": "2013"
+            },
+            {
+              "value": "2012",
+              "label": "2012"
+            },
+            {
+              "value": "2011",
+              "label": "2011"
+            },
+            {
+              "value": "2010",
+              "label": "2010"
+            },
+            {
+              "value": "2009",
+              "label": "2009"
+            },
+            {
+              "value": "2008",
+              "label": "2008"
+            },
+            {
+              "value": "2007",
+              "label": "2007"
+            },
+            {
+              "value": "2006",
+              "label": "2006"
+            },
+            {
+              "value": "2005",
+              "label": "2005"
+            },
+            {
+              "value": "2004",
+              "label": "2004"
+            },
+            {
+              "value": "2003",
+              "label": "2003"
+            },
+            {
+              "value": "2002",
+              "label": "2002"
+            },
+            {
+              "value": "2001",
+              "label": "2001"
+            },
+            {
+              "value": "2000",
+              "label": "2000"
+            }
+          ]
+        },
+        {
+          "id": "sort",
+          "title": "排序",
+          "route": "show",
+          "param": "sort",
+          "options": [
+            {
+              "value": "time",
+              "label": "时间"
+            },
+            {
+              "value": "hits",
+              "label": "人气"
+            },
+            {
+              "value": "score",
+              "label": "评分"
+            }
+          ]
+        }
+      ],
+      "4": [
+        {
+          "id": "genre",
+          "title": "剧情",
+          "route": "show",
+          "param": "genre",
+          "options": [
+            {
+              "value": "",
+              "label": "全部"
+            },
+            {
+              "value": "少儿",
+              "label": "少儿"
+            },
+            {
+              "value": "喜剧",
+              "label": "喜剧"
+            },
+            {
+              "value": "动作",
+              "label": "动作"
+            },
+            {
+              "value": "科幻",
+              "label": "科幻"
+            },
+            {
+              "value": "奇幻",
+              "label": "奇幻"
+            },
+            {
+              "value": "爱情",
+              "label": "爱情"
+            },
+            {
+              "value": "悬疑",
+              "label": "悬疑"
+            },
+            {
+              "value": "推理",
+              "label": "推理"
+            },
+            {
+              "value": "同性",
+              "label": "同性"
+            },
+            {
+              "value": "耽美",
+              "label": "耽美"
+            },
+            {
+              "value": "武侠",
+              "label": "武侠"
+            },
+            {
+              "value": "恐怖",
+              "label": "恐怖"
+            },
+            {
+              "value": "惊悚",
+              "label": "惊悚"
+            },
+            {
+              "value": "运动",
+              "label": "运动"
+            },
+            {
+              "value": "冒险",
+              "label": "冒险"
+            },
+            {
+              "value": "犯罪",
+              "label": "犯罪"
+            },
+            {
+              "value": "历史",
+              "label": "历史"
+            },
+            {
+              "value": "战争",
+              "label": "战争"
+            },
+            {
+              "value": "歌舞",
+              "label": "歌舞"
+            },
+            {
+              "value": "音乐",
+              "label": "音乐"
+            },
+            {
+              "value": "西部",
+              "label": "西部"
+            },
+            {
+              "value": "灾难",
+              "label": "灾难"
+            },
+            {
+              "value": "短片",
+              "label": "短片"
+            },
+            {
+              "value": "动画",
+              "label": "动画"
+            }
+          ]
+        },
+        {
+          "id": "year",
+          "title": "年份",
+          "route": "show",
+          "param": "year",
+          "options": [
+            {
+              "value": "2026",
+              "label": "2026"
+            },
+            {
+              "value": "2025",
+              "label": "2025"
+            },
+            {
+              "value": "2024",
+              "label": "2024"
+            },
+            {
+              "value": "2023",
+              "label": "2023"
+            },
+            {
+              "value": "2022",
+              "label": "2022"
+            },
+            {
+              "value": "2021",
+              "label": "2021"
+            },
+            {
+              "value": "2020",
+              "label": "2020"
+            },
+            {
+              "value": "2019",
+              "label": "2019"
+            },
+            {
+              "value": "2018",
+              "label": "2018"
+            },
+            {
+              "value": "2017",
+              "label": "2017"
+            },
+            {
+              "value": "2016",
+              "label": "2016"
+            },
+            {
+              "value": "2015",
+              "label": "2015"
+            },
+            {
+              "value": "2014",
+              "label": "2014"
+            },
+            {
+              "value": "2013",
+              "label": "2013"
+            },
+            {
+              "value": "2012",
+              "label": "2012"
+            },
+            {
+              "value": "2011",
+              "label": "2011"
+            },
+            {
+              "value": "2010",
+              "label": "2010"
+            },
+            {
+              "value": "2009",
+              "label": "2009"
+            },
+            {
+              "value": "2008",
+              "label": "2008"
+            },
+            {
+              "value": "2007",
+              "label": "2007"
+            },
+            {
+              "value": "2006",
+              "label": "2006"
+            },
+            {
+              "value": "2005",
+              "label": "2005"
+            },
+            {
+              "value": "2004",
+              "label": "2004"
+            },
+            {
+              "value": "2003",
+              "label": "2003"
+            },
+            {
+              "value": "2002",
+              "label": "2002"
+            },
+            {
+              "value": "2001",
+              "label": "2001"
+            },
+            {
+              "value": "2000",
+              "label": "2000"
+            }
+          ]
+        },
+        {
+          "id": "sort",
+          "title": "排序",
+          "route": "show",
+          "param": "sort",
+          "options": [
+            {
+              "value": "time",
+              "label": "时间"
+            },
+            {
+              "value": "hits",
+              "label": "人气"
+            },
+            {
+              "value": "score",
+              "label": "评分"
+            }
+          ]
+        }
+      ],
+      "5": [
+        {
+          "id": "genre",
+          "title": "剧情",
+          "route": "show",
+          "param": "genre",
+          "options": [
+            {
+              "value": "",
+              "label": "全部"
+            },
+            {
+              "value": "奇幻",
+              "label": "奇幻"
+            },
+            {
+              "value": "热血",
+              "label": "热血"
+            },
+            {
+              "value": "穿越",
+              "label": "穿越"
+            },
+            {
+              "value": "末日",
+              "label": "末日"
+            },
+            {
+              "value": "搞笑",
+              "label": "搞笑"
+            },
+            {
+              "value": "玄幻",
+              "label": "玄幻"
+            },
+            {
+              "value": "战斗",
+              "label": "战斗"
+            },
+            {
+              "value": "重生",
+              "label": "重生"
+            },
+            {
+              "value": "冒险",
+              "label": "冒险"
+            },
+            {
+              "value": "仙侠",
+              "label": "仙侠"
+            },
+            {
+              "value": "神魔",
+              "label": "神魔"
+            },
+            {
+              "value": "修仙",
+              "label": "修仙"
+            },
+            {
+              "value": "剧情",
+              "label": "剧情"
+            },
+            {
+              "value": "动作",
+              "label": "动作"
+            },
+            {
+              "value": "喜剧",
+              "label": "喜剧"
+            },
+            {
+              "value": "励志",
+              "label": "励志"
+            },
+            {
+              "value": "古风",
+              "label": "古风"
+            },
+            {
+              "value": "科幻",
+              "label": "科幻"
+            },
+            {
+              "value": "武侠",
+              "label": "武侠"
+            },
+            {
+              "value": "都市",
+              "label": "都市"
+            },
+            {
+              "value": "古装",
+              "label": "古装"
+            },
+            {
+              "value": "机战",
+              "label": "机战"
+            },
+            {
+              "value": "校园",
+              "label": "校园"
+            },
+            {
+              "value": "成长",
+              "label": "成长"
+            },
+            {
+              "value": "少儿",
+              "label": "少儿"
+            },
+            {
+              "value": "爱情",
+              "label": "爱情"
+            },
+            {
+              "value": "悬疑",
+              "label": "悬疑"
+            },
+            {
+              "value": "推理",
+              "label": "推理"
+            },
+            {
+              "value": "恐怖",
+              "label": "恐怖"
+            },
+            {
+              "value": "惊悚",
+              "label": "惊悚"
+            },
+            {
+              "value": "运动",
+              "label": "运动"
+            },
+            {
+              "value": "犯罪",
+              "label": "犯罪"
+            },
+            {
+              "value": "历史",
+              "label": "历史"
+            },
+            {
+              "value": "战争",
+              "label": "战争"
+            },
+            {
+              "value": "歌舞",
+              "label": "歌舞"
+            },
+            {
+              "value": "音乐",
+              "label": "音乐"
+            },
+            {
+              "value": "西部",
+              "label": "西部"
+            },
+            {
+              "value": "灾难",
+              "label": "灾难"
+            },
+            {
+              "value": "短片",
+              "label": "短片"
+            },
+            {
+              "value": "动画",
+              "label": "动画"
+            }
+          ]
+        },
+        {
+          "id": "year",
+          "title": "年份",
+          "route": "show",
+          "param": "year",
+          "options": [
+            {
+              "value": "2026",
+              "label": "2026"
+            },
+            {
+              "value": "2025",
+              "label": "2025"
+            },
+            {
+              "value": "2024",
+              "label": "2024"
+            },
+            {
+              "value": "2023",
+              "label": "2023"
+            },
+            {
+              "value": "2022",
+              "label": "2022"
+            },
+            {
+              "value": "2021",
+              "label": "2021"
+            },
+            {
+              "value": "2020",
+              "label": "2020"
+            },
+            {
+              "value": "2019",
+              "label": "2019"
+            },
+            {
+              "value": "2018",
+              "label": "2018"
+            },
+            {
+              "value": "2017",
+              "label": "2017"
+            },
+            {
+              "value": "2016",
+              "label": "2016"
+            },
+            {
+              "value": "2015",
+              "label": "2015"
+            },
+            {
+              "value": "2014",
+              "label": "2014"
+            },
+            {
+              "value": "2013",
+              "label": "2013"
+            },
+            {
+              "value": "2012",
+              "label": "2012"
+            },
+            {
+              "value": "2011",
+              "label": "2011"
+            },
+            {
+              "value": "2010",
+              "label": "2010"
+            },
+            {
+              "value": "2009",
+              "label": "2009"
+            },
+            {
+              "value": "2008",
+              "label": "2008"
+            },
+            {
+              "value": "2007",
+              "label": "2007"
+            },
+            {
+              "value": "2006",
+              "label": "2006"
+            },
+            {
+              "value": "2005",
+              "label": "2005"
+            },
+            {
+              "value": "2004",
+              "label": "2004"
+            },
+            {
+              "value": "2003",
+              "label": "2003"
+            },
+            {
+              "value": "2002",
+              "label": "2002"
+            },
+            {
+              "value": "2001",
+              "label": "2001"
+            },
+            {
+              "value": "2000",
+              "label": "2000"
+            }
+          ]
+        },
+        {
+          "id": "sort",
+          "title": "排序",
+          "route": "show",
+          "param": "sort",
+          "options": [
+            {
+              "value": "time",
+              "label": "时间"
+            },
+            {
+              "value": "hits",
+              "label": "人气"
+            },
+            {
+              "value": "score",
+              "label": "评分"
+            }
+          ]
+        }
+      ],
+      "24": [
+        {
+          "id": "genre",
+          "title": "剧情",
+          "route": "show",
+          "param": "genre",
+          "options": [
+            {
+              "value": "",
+              "label": "全部"
+            },
+            {
+              "value": "后宫",
+              "label": "后宫"
+            },
+            {
+              "value": "校园",
+              "label": "校园"
+            },
+            {
+              "value": "爱情",
+              "label": "爱情"
+            },
+            {
+              "value": "热血",
+              "label": "热血"
+            },
+            {
+              "value": "战斗",
+              "label": "战斗"
+            },
+            {
+              "value": "竞技",
+              "label": "竞技"
+            },
+            {
+              "value": "青春",
+              "label": "青春"
+            },
+            {
+              "value": "百合",
+              "label": "百合"
+            },
+            {
+              "value": "治愈",
+              "label": "治愈"
+            },
+            {
+              "value": "喜剧",
+              "label": "喜剧"
+            },
+            {
+              "value": "穿越",
+              "label": "穿越"
+            },
+            {
+              "value": "动作",
+              "label": "动作"
+            },
+            {
+              "value": "科幻",
+              "label": "科幻"
+            },
+            {
+              "value": "奇幻",
+              "label": "奇幻"
+            },
+            {
+              "value": "冒险",
+              "label": "冒险"
+            },
+            {
+              "value": "末日",
+              "label": "末日"
+            },
+            {
+              "value": "玄幻",
+              "label": "玄幻"
+            },
+            {
+              "value": "搞笑",
+              "label": "搞笑"
+            },
+            {
+              "value": "重生",
+              "label": "重生"
+            },
+            {
+              "value": "悬疑",
+              "label": "悬疑"
+            },
+            {
+              "value": "推理",
+              "label": "推理"
+            },
+            {
+              "value": "耽美",
+              "label": "耽美"
+            },
+            {
+              "value": "美少女",
+              "label": "美少女"
+            },
+            {
+              "value": "乙女向",
+              "label": "乙女向"
+            },
+            {
+              "value": "励志",
+              "label": "励志"
+            },
+            {
+              "value": "武侠",
+              "label": "武侠"
+            },
+            {
+              "value": "恐怖",
+              "label": "恐怖"
+            },
+            {
+              "value": "惊悚",
+              "label": "惊悚"
+            },
+            {
+              "value": "运动",
+              "label": "运动"
+            },
+            {
+              "value": "萝莉",
+              "label": "萝莉"
+            },
+            {
+              "value": "魔法",
+              "label": "魔法"
+            },
+            {
+              "value": "仙侠",
+              "label": "仙侠"
+            },
+            {
+              "value": "修仙",
+              "label": "修仙"
+            },
+            {
+              "value": "剧情",
+              "label": "剧情"
+            },
+            {
+              "value": "神魔",
+              "label": "神魔"
+            },
+            {
+              "value": "机战",
+              "label": "机战"
+            },
+            {
+              "value": "社会",
+              "label": "社会"
+            },
+            {
+              "value": "职场",
+              "label": "职场"
+            },
+            {
+              "value": "犯罪",
+              "label": "犯罪"
+            },
+            {
+              "value": "历史",
+              "label": "历史"
+            },
+            {
+              "value": "战争",
+              "label": "战争"
+            },
+            {
+              "value": "歌舞",
+              "label": "歌舞"
+            },
+            {
+              "value": "音乐",
+              "label": "音乐"
+            },
+            {
+              "value": "西部",
+              "label": "西部"
+            },
+            {
+              "value": "灾难",
+              "label": "灾难"
+            },
+            {
+              "value": "古风",
+              "label": "古风"
+            },
+            {
+              "value": "古装",
+              "label": "古装"
+            },
+            {
+              "value": "都市",
+              "label": "都市"
+            },
+            {
+              "value": "成长",
+              "label": "成长"
+            },
+            {
+              "value": "少儿",
+              "label": "少儿"
+            },
+            {
+              "value": "动画",
+              "label": "动画"
+            }
+          ]
+        },
+        {
+          "id": "year",
+          "title": "年份",
+          "route": "show",
+          "param": "year",
+          "options": [
+            {
+              "value": "2026",
+              "label": "2026"
+            },
+            {
+              "value": "2025",
+              "label": "2025"
+            },
+            {
+              "value": "2024",
+              "label": "2024"
+            },
+            {
+              "value": "2023",
+              "label": "2023"
+            },
+            {
+              "value": "2022",
+              "label": "2022"
+            },
+            {
+              "value": "2021",
+              "label": "2021"
+            },
+            {
+              "value": "2020",
+              "label": "2020"
+            },
+            {
+              "value": "2019",
+              "label": "2019"
+            },
+            {
+              "value": "2018",
+              "label": "2018"
+            },
+            {
+              "value": "2017",
+              "label": "2017"
+            },
+            {
+              "value": "2016",
+              "label": "2016"
+            },
+            {
+              "value": "2015",
+              "label": "2015"
+            },
+            {
+              "value": "2014",
+              "label": "2014"
+            },
+            {
+              "value": "2013",
+              "label": "2013"
+            },
+            {
+              "value": "2012",
+              "label": "2012"
+            },
+            {
+              "value": "2011",
+              "label": "2011"
+            },
+            {
+              "value": "2010",
+              "label": "2010"
+            },
+            {
+              "value": "2009",
+              "label": "2009"
+            },
+            {
+              "value": "2008",
+              "label": "2008"
+            },
+            {
+              "value": "2007",
+              "label": "2007"
+            },
+            {
+              "value": "2006",
+              "label": "2006"
+            },
+            {
+              "value": "2005",
+              "label": "2005"
+            },
+            {
+              "value": "2004",
+              "label": "2004"
+            },
+            {
+              "value": "2003",
+              "label": "2003"
+            },
+            {
+              "value": "2002",
+              "label": "2002"
+            },
+            {
+              "value": "2001",
+              "label": "2001"
+            },
+            {
+              "value": "2000",
+              "label": "2000"
+            }
+          ]
+        },
+        {
+          "id": "sort",
+          "title": "排序",
+          "route": "show",
+          "param": "sort",
+          "options": [
+            {
+              "value": "time",
+              "label": "时间"
+            },
+            {
+              "value": "hits",
+              "label": "人气"
+            },
+            {
+              "value": "score",
+              "label": "评分"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "homeSections": [
+    {
+      "id": "latest",
+      "title": "最新更新",
+      "route": "latest",
+      "style": "grid",
+      "limit": 18,
+      "more": true
+    },
+    {
+      "id": "cat_1",
+      "title": "日漫",
+      "route": "category",
+      "params": {
+        "category": "1"
+      },
+      "style": "grid",
+      "limit": 12,
+      "more": true
+    },
+    {
+      "id": "cat_2",
+      "title": "国漫",
+      "route": "category",
+      "params": {
+        "category": "2"
+      },
+      "style": "grid",
+      "limit": 12,
+      "more": true
+    },
+    {
+      "id": "cat_3",
+      "title": "美漫",
+      "route": "category",
+      "params": {
+        "category": "3"
+      },
+      "style": "grid",
+      "limit": 12,
+      "more": true
+    },
+    {
+      "id": "cat_4",
+      "title": "特摄",
+      "route": "category",
+      "params": {
+        "category": "4"
+      },
+      "style": "grid",
+      "limit": 12,
+      "more": true
+    },
+    {
+      "id": "cat_5",
+      "title": "动画",
+      "route": "category",
+      "params": {
+        "category": "5"
+      },
+      "style": "grid",
+      "limit": 12,
+      "more": true
+    },
+    {
+      "id": "cat_24",
+      "title": "剧场",
+      "route": "category",
+      "params": {
+        "category": "24"
+      },
+      "style": "grid",
+      "limit": 12,
+      "more": true
+    },
+    {
+      "id": "week",
+      "title": "周更列表",
+      "route": "week",
+      "style": "schedule",
+      "limit": 0,
+      "more": false
+    }
+  ],
+  "stealthMode": true,
+  "antiHotlinking": {
+    "referer": "https://cn.233dm.com"
+  },
+  "enabled": true,
+  "enabledExplore": true,
+  "migrationMessage": "v11：① 搜索分页——search 三路由补 {page}（/search/{关键词}----------{页码}---.html），搜索页滚动到底自动加载下一页；② 筛选修复——show 路由改站点真实 12 段格式 /show/{分类}--{排序}-{剧情}-----{页码}---{年份}.html，并按分类提供不同筛选：日漫/国漫含「剧情」标签组（站点真实标签），其余分类先提供年份/排序（剧情标签待取证补齐）；③ 视频解析——引擎新增播放器脚本数据扫描（MacCMS player_aaaa 协议与 m3u8/mp4 直链），播放页渲染回灌后可直接抽出视频地址，修复 0×0 黑屏。"
+}
