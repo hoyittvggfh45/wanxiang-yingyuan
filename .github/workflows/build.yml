@@ -464,11 +464,31 @@ jobs:
             echo "storeFile=app/upload-keystore.jks"
           } > android/key.properties
           echo "keystore 与 key.properties 已还原"
-      - name: 编译 APK
+      - name: 编译分架构 APK（逐架构单编，替代 --split-per-abi）
+        # AGP 禁止 ndk.abiFilters（Chaquopy 必需）与 --split-per-abi 的 splits
+        # 同时存在（EvalIssueException），故三个架构各单独编一次：每次以 WXY_ABIS
+        # 指定唯一架构 + --target-platform 锁定目标平台，产出后改名成分包样式
+        #（WanxiangYingyuan-<abi>-release.apk），与原分包产物同名同位。
         shell: bash
         run: |
           set -o pipefail
-          flutter build apk --release --split-per-abi --verbose --dart-define=DANMAKU_APP_ID=${{ secrets.DANMAKU_APP_ID }} --dart-define=DANMAKU_APP_SECRET=${{ secrets.DANMAKU_APP_SECRET }} --dart-define=BANGUMI_CLIENT_ID=${{ secrets.BANGUMI_CLIENT_ID }} --dart-define=BANGUMI_CLIENT_SECRET=${{ secrets.BANGUMI_CLIENT_SECRET }} 2>&1 | tee apk_build.log || { echo "=== ANDROID BUILD FAILED ===" && tail -n 500 apk_build.log; exit 1; }
+          OUT=build/app/outputs/flutter-apk
+          build_one() {
+            local abi="$1" platform="$2"
+            echo "== 构建 $abi ($platform) =="
+            WXY_ABIS="$abi" flutter build apk --release --target-platform "$platform" --verbose --dart-define=DANMAKU_APP_ID=${{ secrets.DANMAKU_APP_ID }} --dart-define=DANMAKU_APP_SECRET=${{ secrets.DANMAKU_APP_SECRET }} --dart-define=BANGUMI_CLIENT_ID=${{ secrets.BANGUMI_CLIENT_ID }} --dart-define=BANGUMI_CLIENT_SECRET=${{ secrets.BANGUMI_CLIENT_SECRET }} 2>&1 | tee "apk_build_${abi}.log" || { echo "=== ANDROID BUILD FAILED ($abi) ===" && tail -n 500 "apk_build_${abi}.log"; exit 1; }
+            if [ -f "$OUT/WanxiangYingyuan-release.apk" ]; then
+              mv "$OUT/WanxiangYingyuan-release.apk" "$OUT/WanxiangYingyuan-${abi}-release.apk"
+            elif [ -f "$OUT/app-release.apk" ]; then
+              mv "$OUT/app-release.apk" "$OUT/WanxiangYingyuan-${abi}-release.apk"
+            else
+              echo "!! 找不到 $abi 构建产物"; ls -la "$OUT"; exit 1
+            fi
+          }
+          build_one arm64-v8a android-arm64
+          build_one armeabi-v7a android-arm
+          build_one x86_64 android-x64
+          ls -la "$OUT"
       - name: 编译通用 APK（fat，单文件全架构）
         # 与上方 --split-per-abi 分包并存：本步产出 app-release.apk（一个包适配所有 ABI），
         # 方便不想按架构挑包的用户直接安装。产物同样落在 build/app/outputs/flutter-apk/，

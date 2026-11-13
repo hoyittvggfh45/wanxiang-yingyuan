@@ -72,10 +72,15 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         // Chaquopy 要求显式声明 ndk abiFilters，否则配置阶段直接失败
-        //（"Chaquopy requires ndk.abiFilters"）。与 Flutter split-per-abi
-        // 产出的三个架构一致。
+        //（"Chaquopy requires ndk.abiFilters"）。但 AGP 禁止 abiFilters 与
+        // --split-per-abi 的 splits 同时存在，故分包构建改走"逐架构单编"：
+        // workflow 每次构建前以 WXY_ABIS 环境变量指定当次唯一架构，
+        // 本地不设时默认三个架构（产 fat 包）。
         ndk {
-            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
+            abiFilters += (System.getenv("WXY_ABIS")
+                ?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }
+                ?.takeIf { it.isNotEmpty() }
+                ?: listOf("arm64-v8a", "armeabi-v7a", "x86_64"))
         }
     }
 
