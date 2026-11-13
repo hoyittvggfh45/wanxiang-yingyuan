@@ -245,6 +245,13 @@ jobs:
           flutter-version: '3.47.0'
           channel: 'stable'
           cache: true
+      - name: 安装 Python 3.11（Chaquopy 构建用 Python）
+        # Chaquopy 编译 pip 包需要一台与 version 一致的本地 Python（buildPython），
+        # runner 自带的 python3 是 3.12/3.13，找不到 3.11 会在执行期失败。
+        # build.gradle.kts 从 CHAQUOPY_BUILD_PYTHON 环境变量读路径。
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - name: 获取依赖
         run: flutter pub get 2>&1
       - name: 修补插件 proguard 配置以兼容 AGP 9
@@ -472,6 +479,9 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
+          export CHAQUOPY_BUILD_PYTHON="$pythonLocation/bin/python"
+          echo "CHAQUOPY_BUILD_PYTHON=$CHAQUOPY_BUILD_PYTHON"
+          "$CHAQUOPY_BUILD_PYTHON" --version
           OUT=build/app/outputs/flutter-apk
           build_one() {
             local abi="$1" platform="$2"
@@ -496,6 +506,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
+          export CHAQUOPY_BUILD_PYTHON="$pythonLocation/bin/python"
           flutter build apk --release --verbose --dart-define=DANMAKU_APP_ID=${{ secrets.DANMAKU_APP_ID }} --dart-define=DANMAKU_APP_SECRET=${{ secrets.DANMAKU_APP_SECRET }} --dart-define=BANGUMI_CLIENT_ID=${{ secrets.BANGUMI_CLIENT_ID }} --dart-define=BANGUMI_CLIENT_SECRET=${{ secrets.BANGUMI_CLIENT_SECRET }} 2>&1 | tee apk_fat_build.log || { echo "=== ANDROID FAT APK BUILD FAILED ===" && tail -n 500 apk_fat_build.log; exit 1; }
       - name: 校验 ECH 引擎已打包 (libechproxy.so)
         # 三个 ABI 的 jniLibs/libechproxy.so 均已入库、Gradle 自动打包（现状无此 bug）。
