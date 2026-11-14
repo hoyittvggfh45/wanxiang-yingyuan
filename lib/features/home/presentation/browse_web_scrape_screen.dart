@@ -697,7 +697,9 @@ class _BrowseWebScrapeScreenState extends State<BrowseWebScrapeScreen> {
   Widget _buildResult(AppLocalizations l10n, ColorScheme scheme) {
     if (_loading) return const Center(child: CircularProgressIndicator());
     if (_error != null) {
-      return AppErrorState(message: l10n.loadFailed, onRetry: () => _scrape(_urlCtl.text), retryLabel: l10n.retry);
+      // 显示真实失败原因（网络错误 / 状态码 / 验证失败等），而不是通用
+      // 「加载失败」——否则用户无法判断是网络、梯子还是站点本身的问题。
+      return AppErrorState(message: _error!, onRetry: () => _scrape(_urlCtl.text), retryLabel: l10n.retry);
     }
     final result = _result;
     if (result == null) {

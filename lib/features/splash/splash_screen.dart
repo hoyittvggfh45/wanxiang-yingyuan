@@ -38,6 +38,7 @@ import '../../core/services/bangumi/bangumi_ech_proxy.dart';
 import '../../core/services/bangumi/bangumi_proxy_config.dart';
 import '../../core/services/source_library_bookmarks.dart';
 import '../../core/services/source_library_subscription.dart';
+import '../../core/storage/box_lock_probe.dart';
 import '../../core/settings/general_settings.dart';
 import '../../core/storage/cache_auto_clean.dart';
 import '../../core/storage/platform_path_compat.dart';
@@ -170,7 +171,8 @@ class _SplashScreenState extends State<SplashScreen> {
     }
 
     await Future.wait(<Future<void>>[
-      for (final name in kStorageBoxNames) _openBoxResilient(name),
+      for (final name in kStorageBoxNames)
+        _openBoxResilient(name, appDir.path),
     ]);
 
     // 跨平台备份自修复：外来平台写进来的路径型配置（下载 / 导出 / 截图目录）
@@ -407,7 +409,13 @@ class _SplashScreenState extends State<SplashScreen> {
   /// 文件，[Hive.openBox] 会抛 [HiveError]。此时把疑似损坏的文件改名留档
   /// （不直接删，便于事后排查），再重建一个空 box；非 Hive 自身错误（例如
   /// 权限）只跳过、绝不碰文件。
-  Future<void> _openBoxResilient(String name) async {
+  ///
+  /// 开盒前先过 [probeBoxLock]：锁被滞留的旧引擎/进程持有时，[Hive.openBox]
+  /// 内部的阻塞式文件锁会冻住事件循环（超时与重试界面全部饿死），故探到
+  /// 争用直接抛 [BoxLockContended]，绝不进 `openBox`，让启动失败快速、
+  /// 可见、可重试。
+  Future<void> _openBoxResilient(String name, String hivePath) async {
+    await probeBoxLock(hivePath, name);
     try {
       await Hive.openBox(name);
       return;
@@ -648,6 +656,18 @@ class _ErrorView extends StatelessWidget {
                 style: theme.textTheme.titleMedium,
                 textAlign: TextAlign.center,
               ),
+              // 真实失败原因必须可见：只显示通用「加载失败」时，用户与排查
+              // 方都无法区分超时、锁争用、权限等不同根因。
+              if (error != null) ...<Widget>[
+                const SizedBox(height: AppTokens.spaceMd),
+                Text(
+                  error.toString(),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
               const SizedBox(height: AppTokens.spaceXl),
               FilledButton.icon(
                 onPressed: onRetry,

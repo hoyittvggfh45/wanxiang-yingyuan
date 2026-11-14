@@ -193,6 +193,11 @@ class _OnlineContentListScreenState extends State<OnlineContentListScreen>
   // 首页板块懒加载：每个板块的加载状态（未加载 / 加载中 / 已加载 / 失败）。
   // 方案 A：只抓取进入视口的板块，其余滑到/点开才抓（配合 HttpFetcher 信号量限流）。
   final Map<String, _SectionStatus> _sectionStatus = <String, _SectionStatus>{};
+  // 各板块失败时的真实原因（与 _sectionStatus.error 配对展示，不再只
+  // 显示通用「加载失败」，否则无法区分桥接/引擎/站点/网络问题）。
+  final Map<String, String> _sectionErrors = <String, String>{};
+  // 分类拉取失败时的真实原因（首页同时为空时展示为错误态）。
+  String? _categoriesError;
   // 各板块的 GlobalKey（用于滚动时计算是否在视口内）。
   final Map<String, GlobalKey> _sectionKeys = <String, GlobalKey>{};
   // 首页板块抓取串行链：保证同一首页内多个板块**顺序**抓取（一次一个），
@@ -342,10 +347,30 @@ class _OnlineContentListScreenState extends State<OnlineContentListScreen>
     }
   }
 
+  /// 失败原因文案：验证重试的错误优先，否则取原始异常；截断防刷屏。
+  String _shortError(Object e, [String? retryError]) {
+    final raw = retryError ?? e.toString();
+    const max = 300;
+    return raw.length > max ? '${raw.substring(0, max)}…' : raw;
+  }
+
+  /// 下拉刷新：分类 + 首页 + 各板块全部重拉（此前首页没有任何刷新
+  /// 入口，只能切源或点重试按钮）。静默加载首页，避免刷新指示器
+  /// 与全屏 loading 冲突；板块在布局后按视口懒加载重抓。
+  Future<void> _refreshHome() async {
+    _sectionErrors.clear();
+    _sectionStatus.clear();
+    _homeSectionItems.clear();
+    _categoriesError = null;
+    await _loadCategories();
+    await _loadHome(showLoading: false);
+  }
+
   Future<void> _loadCategories() async {
     if (_source == null || widget.fetchCategories == null) {
       setState(() {
         _categories.clear();
+        _categoriesError = null;
         _rebuildTabController();
       });
       return;
@@ -357,13 +382,17 @@ class _OnlineContentListScreenState extends State<OnlineContentListScreen>
           _categories
             ..clear()
             ..addAll(cats);
+          _categoriesError = null;
           _tabStates.clear();
           _rebuildTabController();
         });
         // 分类就绪（若主页也已就绪）即触发首个分类预载，缩短首次点击的冷启动窗口。
         _tryPreloadFirstCategory();
       }
-    } on Object {
+    } on Object catch (e) {
+      // 分类失败不再静默：记下真实原因；首页同时为空时由 _buildHomeTab
+      // 展示为错误态（带重试），避免「分类标签悄悄消失」。
+      _categoriesError = _shortError(e);
       if (mounted) {
         setState(() {
           _categories.clear();
@@ -391,10 +420,13 @@ class _OnlineContentListScreenState extends State<OnlineContentListScreen>
   }
 
   /// 加载首页数据（按源声明的多板块竖向堆叠；缺省回退单块「最新更新」）。
-  Future<void> _loadHome() async {
+  ///
+  /// [showLoading] 为假时不显示全屏 loading（供下拉刷新：刷新指示器
+  /// 已在转，再叠全屏 loading 会把列表顶掉、指示器提前消失）。
+  Future<void> _loadHome({bool showLoading = true}) async {
     if (_source == null) return;
     setState(() {
-      _homeLoading = true;
+      _homeLoading = showLoading;
       _homeError = null;
     });
     final source = _source!;
@@ -444,13 +476,13 @@ class _OnlineContentListScreenState extends State<OnlineContentListScreen>
 
       if (!handled && mounted) {
         setState(() {
-          _homeError = AppLocalizations.of(context).loadFailed;
+          _homeError = _shortError(e, retryError);
           _homeLoading = false;
         });
       } else if (handled && retryError != null && mounted) {
-        // 验证完成但重试仍失败：展示加载失败，避免被空列表掩盖。
+        // 验证完成但重试仍失败：展示真实失败原因，避免被空列表掩盖。
         setState(() {
-          _homeError = AppLocalizations.of(context).loadFailed;
+          _homeError = _shortError(e, retryError);
           _homeLoading = false;
         });
       }
@@ -543,6 +575,7 @@ class _OnlineContentListScreenState extends State<OnlineContentListScreen>
       setState(() {
         _homeSectionItems[sec.id] = limited;
         _sectionStatus[sec.id] = _SectionStatus.loaded;
+        _sectionErrors.remove(sec.id);
       });
     } on Object catch (e) {
       if (!mounted) return;
@@ -574,6 +607,7 @@ class _OnlineContentListScreenState extends State<OnlineContentListScreen>
           setState(() {
             _homeSectionItems[sec.id] = limited;
             _sectionStatus[sec.id] = _SectionStatus.loaded;
+            _sectionErrors.remove(sec.id);
           });
         },
         verifyHandler: widget.verificationHandler,
@@ -584,9 +618,11 @@ class _OnlineContentListScreenState extends State<OnlineContentListScreen>
       if (!mounted) return;
       if (source != _source) return;
       if (!handled) {
+        _sectionErrors[sec.id] = _shortError(e, retryError);
         setState(() => _sectionStatus[sec.id] = _SectionStatus.error);
       } else if (retryError != null) {
-        // 验证已弹但重试仍失败：保留错误态，避免被空列表掩盖。
+        // 验证已弹但重试仍失败：保留错误态与真实原因，避免被空列表掩盖。
+        _sectionErrors[sec.id] = _shortError(e, retryError);
         setState(() => _sectionStatus[sec.id] = _SectionStatus.error);
       }
       // handled && retryError == null → 重试回调已成功 setState loaded，无需再处理。
@@ -1369,6 +1405,16 @@ class _OnlineContentListScreenState extends State<OnlineContentListScreen>
       );
     }
     if (_homeSections.isEmpty) {
+      // 首页与分类同时拉不到：分类的真实失败原因优先展示为错误态
+      // （带重试），而不是「暂无内容」空态。
+      final categoriesError = _categoriesError;
+      if (categoriesError != null) {
+        return AppErrorState(
+          message: categoriesError,
+          onRetry: _refreshHome,
+          retryLabel: l10n.retry,
+        );
+      }
       return _buildEmptyWithDiagnostics(
         l10n,
         message: l10n.emptyContent,
@@ -1381,9 +1427,13 @@ class _OnlineContentListScreenState extends State<OnlineContentListScreen>
         _scanVisibleSections();
         return false;
       },
-      child: ListView(
-        key: _homeListKey,
-        children: <Widget>[
+      child: RefreshIndicator(
+        onRefresh: _refreshHome,
+        child: ListView(
+          key: _homeListKey,
+          // 内容不足一屏时也要能下拉刷新。
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: <Widget>[
           const SizedBox(height: AppTokens.spaceSm),
           for (final sec in _homeSections) ...<Widget>[
             if (sec.style != 'schedule') ...<Widget>[
@@ -1397,7 +1447,7 @@ class _OnlineContentListScreenState extends State<OnlineContentListScreen>
                 loading: _sectionStatus[sec.id] != _SectionStatus.loaded &&
                     _sectionStatus[sec.id] != _SectionStatus.error,
                 errorMessage: _sectionStatus[sec.id] == _SectionStatus.error
-                    ? l10n.loadFailed
+                    ? (_sectionErrors[sec.id] ?? l10n.loadFailed)
                     : null,
                 onRetry: () => _ensureSection(sec),
               ),
@@ -1405,6 +1455,7 @@ class _OnlineContentListScreenState extends State<OnlineContentListScreen>
             ],
           ],
         ],
+        ),
       ),
     );
   }

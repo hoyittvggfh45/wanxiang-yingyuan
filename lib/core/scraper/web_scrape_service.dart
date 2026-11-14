@@ -76,6 +76,12 @@ class WebScrapeService {
   /// [VerificationRequiredException]（由调用方决定重试或跳转验证页）。
   Future<ScrapeResult> scrape(String url, ScrapeMode mode) async {
     final html = await HttpFetcher.instance.getHtml(url);
+    // 空页面不是「无结果」：HTTP 成功却返回空正文，说明响应被截断或
+    // 站点根本没吐内容，必须当错误报出来，否则用户看到的只是空态，
+    // 无法区分「网没通」与「页上真没东西」。
+    if (html.trim().isEmpty) {
+      throw Exception('服务器返回了空页面，无内容可爬：$url');
+    }
     final base = Uri.tryParse(url);
     String? absolutize(String? raw) {
       if (raw == null || raw.isEmpty) return null;
@@ -167,6 +173,22 @@ class WebScrapeService {
       final src = e.attributes['src'];
       if (src != null && src.isNotEmpty) {
         list.add(ScrapedVideo(url: src, fromIframe: true));
+      }
+    }
+    // 兜底：多数视频站把流地址藏在 <script>/JSON 里，页面上根本没有
+    // <video> 标签。直接在原文里扫流媒体直链（m3u8/mp4 等），否则
+    // 视频模式对这类站永远是空结果。只认绝对地址与 // 协议相对地址，
+    // 去重、上限 100 条，避免把页面噪音全捞进来。
+    final seen = list.map((v) => v.url).toSet();
+    final streamPattern = RegExp(
+      r'''(?:https?:)?//[^\s"'<>\\]+\.(?:m3u8|mp4|m4v|mov|flv|mkv|avi|webm)(?:\?[^\s"'<>\\]*)?''',
+      caseSensitive: false,
+    );
+    for (final m in streamPattern.allMatches(html)) {
+      if (list.length >= 100) break;
+      final candidate = m.group(0)!;
+      if (seen.add(candidate)) {
+        list.add(ScrapedVideo(url: candidate, fromIframe: false));
       }
     }
     return list;

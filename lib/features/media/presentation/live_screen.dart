@@ -1,8 +1,9 @@
-/// 直播区：分组 + 频道列表，点频道直链播放。
+/// 直播区：分组 + 频道列表，点频道进房间页播放。
 ///
-/// 落在影视区「在线」旁边的「直播」页签内。默认数据为内置 M3U 清单，
+/// 落在底部导航的「直播」目的地内。默认数据为内置 M3U 清单，
 /// 支持导入自定义清单（选文件 / 粘贴文本）与恢复默认。
-/// 播放走 [VideoPlayerScreen] 的直链模式（directUrl），不经过源解析。
+/// 点频道进 [LiveRoomScreen] 房间页（内嵌播放器 + 分组/频道列表 +
+/// 全屏播放页），不直接推播放器页。
 library;
 
 import 'dart:async';
@@ -13,10 +14,9 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../core/live/live_models.dart';
 import '../../../core/live/live_repository.dart';
-import '../../../core/models/episode.dart';
 import '../../../core/navigation/app_page_route.dart';
 import '../../../core/theme/app_tokens.dart';
-import '../../player/presentation/video_player_screen.dart';
+import 'live_room_screen.dart';
 
 class LiveScreen extends StatefulWidget {
   const LiveScreen({super.key});
@@ -73,7 +73,7 @@ class _LiveScreenState extends State<LiveScreen> {
         .toList();
   }
 
-  void _play(LiveChannel channel) {
+  void _play(LiveParseResult result, LiveChannel channel) {
     if (!channel.playable) {
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('该频道没有可用的播放地址')));
@@ -81,19 +81,8 @@ class _LiveScreenState extends State<LiveScreen> {
     }
     Navigator.of(context).push(
       AppPageRoute<void>(
-        builder: (_) => VideoPlayerScreen(
-          title: channel.name,
-          episode: Episode(
-            id: channel.key,
-            title: channel.name,
-            url: channel.url,
-          ),
-          sourceId: 'live',
-          itemId: 'live:${channel.key}',
-          directUrl: channel.url,
-          coverUrl: channel.logo,
-          restoreProgress: false,
-        ),
+        builder: (_) =>
+            LiveRoomScreen(result: result, initialChannel: channel),
       ),
     );
   }
@@ -295,7 +284,7 @@ class _LiveScreenState extends State<LiveScreen> {
                                 trailing: c.urls.length > 1
                                     ? Text('${c.urls.length} 条地址')
                                     : null,
-                                onTap: () => _play(c),
+                                onTap: () => _play(result, c),
                               );
                             },
                           ),
